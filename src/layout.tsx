@@ -1,0 +1,462 @@
+/**
+ * Persistent app shell (mirrors joybuddy's BuddyLayout): the recent sider is
+ * always mounted on the left, the active route renders as a content card via
+ * <Outlet/>. Shared cross-route state (error banner, sider collapse, recent
+ * history) lives here and is handed down through the router outlet context.
+ */
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom';
+import { Alert, Dropdown, Empty, Tooltip, Tour } from 'antd';
+import type { MenuProps, TourProps } from 'antd';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import type { ConversationsProps } from '@ant-design/x';
+import { Conversations } from '@ant-design/x';
+import {
+  CompassOutlined,
+  DeleteOutlined,
+  RetweetOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
+import {
+  HistoryEntry,
+  basename,
+  entryKey,
+  loadHistory,
+  pushHistory,
+  removeHistory,
+} from './history';
+import { SidebarToggleSvg } from './icons';
+import { materialIconUrl, materialIconUrlByName } from './material-icons';
+import { SettingsModal } from './pages/settings/settings-modal';
+
+/** Sidebar fixed icons are all rendered as material-icon-theme colored svgs. */
+function MaterialNavIcon({ name }: { name: string }) {
+  return (
+    <img
+      className="w-4 h-4 object-contain select-none"
+      src={materialIconUrlByName(name)}
+      alt=""
+      aria-hidden
+      draggable={false}
+    />
+  );
+}
+
+/** Shared shell context handed to every route through the outlet. */
+export interface ShellContext {
+  setError: (msg: string) => void;
+  siderCollapsed: boolean;
+  onExpandSider: () => void;
+  /** Manually start the onboarding tour (expands the sidebar, then opens the Tour). */
+  startTour: () => void;
+  /** Live recent-comparison list (single source of truth shared with the sidebar). */
+  recent: HistoryEntry[];
+  /** Record a freshly-compared pair into recent history. */
+  pushRecent: (
+    left: string,
+    right: string,
+    kind?: 'file' | 'folder' | 'git',
+    git?: { repo: string; leftName: string; rightName: string },
+  ) => void;
+  /** Remove a single recent-comparison entry by its {@link entryKey}. */
+  removeRecent: (key: string) => void;
+}
+
+/** Hook so route pages can read the shared shell context in a typed way. */
+export function useShell() {
+  return useOutletContext<ShellContext>();
+}
+
+/**
+ * Name for a "recent comparison" list item: single-line ellipsis by default; on
+ * hover, if the text overflows, it scrolls left in a loop to show the full content.
+ * After mount / content change, it measures the overflow amount and writes it into
+ * a CSS variable to drive the animation; no scrolling is triggered when there is no
+ * overflow. Scroll speed is derived from the overflow distance to keep a constant pace.
+ */
+function MarqueeLabel({ text }: { text: ReactNode }) {
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const innerRef = useRef<HTMLSpanElement>(null);
+  const [shift, setShift] = useState(0);
+
+  // Measure the overflow distance: inner is block+nowrap, so its scrollWidth is the
+  // full text width; the difference from the visible window width is the distance to
+  // scroll left. On mount the font/layout may not be stable, making the measurement
+  // too small, so we re-measure once on mouse enter to get an accurate value.
+  const measure = () => {
+    const wrap = wrapRef.current;
+    const inner = innerRef.current;
+    if (!wrap || !inner) return;
+    const overflow = inner.scrollWidth - wrap.clientWidth;
+    setShift(overflow > 0 ? overflow : 0);
+  };
+
+  useLayoutEffect(() => {
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, [text]);
+
+  useLayoutEffect(() => {
+    // The text width changes after fonts finish loading asynchronously, but the
+    // container size hasn't changed, so ResizeObserver won't fire; we proactively
+    // re-measure once the fonts are ready.
+    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+    if (!fonts?.ready) return;
+    let alive = true;
+    fonts.ready.then(() => {
+      if (alive) measure();
+    });
+    return () => {
+      alive = false;
+    };
+  }, [text]);
+
+  // Constant 40px/s speed keeps long and short names scrolling at the same pace (a stop frame at each end adds a pause).
+  const duration = shift > 0 ? Math.max(3, shift / 40 + 1.5) : 0;
+  return (
+    <span
+      ref={wrapRef}
+      className="recent-marquee"
+      onMouseEnter={measure}
+      style={
+        {
+          '--marquee-shift': `-${shift}px`,
+          '--marquee-duration': `${duration}s`,
+        } as CSSProperties
+      }
+    >
+      <span ref={innerRef} className="recent-marquee__inner">
+        {text}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Left sidebar listing recently compared file pairs. Collapses to width 0 with a
+ * sliding animation; the collapse toggle floats at the top-right and stays visible
+ * even when collapsed (mirrors joybuddy's ConversationSider).
+ */
+function RecentPanel({
+  recent,
+  collapsed,
+  onToggle,
+  onOpenSettings,
+  onStartTour,
+  onRemove,
+}: {
+  recent: HistoryEntry[];
+  collapsed: boolean;
+  onToggle: () => void;
+  onOpenSettings: () => void;
+  onStartTour: () => void;
+  onRemove: (key: string) => void;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useTranslation('layout');
+  // Top navigation items (aligned with joybuddy's navItems). Just add to the array,
+  // and Conversations handles unified styling/interaction automatically.
+  const navItems: ConversationsProps['items'] = [
+    {
+      key: 'text',
+      label: t('textCompare'),
+      icon: <MaterialNavIcon name="document" />,
+    },
+    {
+      key: 'folder',
+      label: t('folderCompare'),
+      icon: <MaterialNavIcon name="folder-base-open" />,
+    },
+    {
+      key: 'git',
+      label: t('gitCompare'),
+      icon: <MaterialNavIcon name="git" />,
+    },
+  ];
+  // Recent-comparison list items: key uses kind|left|right for unique identification; icon distinguishes file/folder by type.
+  const recentItems: ConversationsProps['items'] = recent.map((e) => {
+    const key = entryKey(e);
+    // Right-click (context menu) on a recent item to remove it from history.
+    const menu: MenuProps = {
+      items: [
+        {
+          key: 'remove',
+          danger: true,
+          icon: <DeleteOutlined />,
+          label: t('removeRecent'),
+        },
+      ],
+      onClick: ({ key: menuKey, domEvent }) => {
+        domEvent.stopPropagation();
+        if (menuKey === 'remove') onRemove(key);
+      },
+    };
+    return {
+      key,
+      label: (
+        <Dropdown menu={menu} trigger={['contextMenu']}>
+          <span className="block w-full">
+            <MarqueeLabel
+              text={
+                <span className="recent-line">
+                  {e.kind === 'git' && e.repo && (
+                    <span className="recent-name">{basename(e.repo)}:</span>
+                  )}
+                  <span className="recent-name">{e.leftName}</span>
+                  <RetweetOutlined className="recent-swap text-muted text-[12px]" />
+                  <span className="recent-name">{e.rightName}</span>
+                </span>
+              }
+            />
+          </span>
+        </Dropdown>
+      ),
+      icon:
+        e.kind === 'git' ? (
+          <MaterialNavIcon name="git" />
+        ) : e.kind === 'folder' ? (
+          <MaterialNavIcon name="folder-base-open" />
+        ) : (
+          <img
+            className="w-4 h-4 object-contain select-none"
+            src={materialIconUrl(e.leftName, 'document')}
+            alt=""
+            aria-hidden
+            draggable={false}
+          />
+        ),
+    };
+  });
+  const pathFor = (key: string): string =>
+    key === 'folder' ? '/folder-compare' : key === 'git' ? '/git-compare' : '/text-compare';
+  // Top-nav highlight: derive the nav key from the current route so the highlight stays in sync after route changes,
+  // and the controlled activeKey ensures clicking a different item always triggers onActiveChange navigation.
+  const navActiveKey =
+    location.pathname === '/folder-compare'
+      ? 'folder'
+      : location.pathname === '/git-compare'
+        ? 'git'
+        : location.pathname === '/text-compare'
+          ? 'text'
+          : undefined;
+  return (
+    <div
+      className="relative flex-none h-full transition-[width] duration-200 ease-in-out"
+      style={{ width: collapsed ? 0 : 240 }}
+    >
+      <div className="h-full w-60 overflow-hidden">
+        <aside className="h-full w-60 flex flex-col px-0 pb-4 bg-panel overflow-y-auto">
+          {/* Top spacer under the native traffic lights; draggable window strip. */}
+          <div className="h-10 flex-none" data-tauri-drag-region />
+          {/* Onboarding tour entry: placed above the comparison modes; click to manually start the Tour. */}
+          <div className="shrink-0 px-2 pt-2">
+            <button
+              type="button"
+              className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
+              onClick={onStartTour}
+            >
+              <CompassOutlined className="text-accent" />
+              <span className="flex-1 text-left">{t('onboarding')}</span>
+            </button>
+          </div>
+          {/* Action area: comparison methods. */}
+          <div data-tour="sider-nav" className="shrink-0">
+            <Conversations
+              items={navItems}
+              className="px-2 pt-2"
+              classNames={{ item: 'h-8 min-h-8' }}
+              activeKey={navActiveKey}
+              onActiveChange={(key) => navigate(pathFor(key))}
+            />
+          </div>
+          {/* Divider between the action area and the recent list. */}
+          <div className="mx-2 my-1 h-px shrink-0 bg-split" />
+          <div className="shrink-0 px-4 pt-1 pb-1 text-[12px] text-muted">{t('recentCompare')}</div>
+          {recent?.length === 0 ? (
+            <div className="flex items-center justify-center px-2.5 py-6">
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={false} />
+            </div>
+          ) : (
+            <Conversations
+              items={recentItems}
+              className="flex-1 min-h-0 overflow-auto px-2 pb-2 pt-0"
+              classNames={{ item: 'h-8 min-h-8' }}
+              activeKey=""
+              onActiveChange={(key) => {
+                const entry = recent.find(
+                  (e) => `${e.kind}|${e.repo ?? ''}|${e.left}|${e.right}` === key,
+                );
+                if (entry) {
+                  navigate(
+                    entry.kind === 'git'
+                      ? '/git-compare'
+                      : entry.kind === 'folder'
+                        ? '/folder-compare'
+                        : '/text-compare',
+                    {
+                      state:
+                        entry.kind === 'git'
+                          ? {
+                              repo: entry.repo,
+                              from: entry.left,
+                              to: entry.right,
+                            }
+                          : { left: entry.left, right: entry.right },
+                    },
+                  );
+                }
+              }}
+            />
+          )}
+          {/* Fixed "Settings" entry at the bottom (mt-auto pushes it to the bottom, always visible). */}
+          <div className="mt-auto shrink-0 px-2 py-2">
+            <button
+              type="button"
+              data-tour="sider-settings"
+              className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
+              onClick={onOpenSettings}
+            >
+              <SettingOutlined className="text-muted" />
+              <span className="flex-1 text-left">{t('settings')}</span>
+            </button>
+          </div>
+        </aside>
+      </div>
+      {!collapsed && (
+        <Tooltip title={t('collapseSider')} placement="right">
+          <button
+            type="button"
+            aria-label={t('collapseSider')}
+            className="text-[14px] absolute top-[11px] left-51 z-20 flex items-center justify-center w-7 h-7 rounded-md text-muted bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
+            onClick={onToggle}
+          >
+            <SidebarToggleSvg />
+          </button>
+        </Tooltip>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Root layout: single persistent shell hosting the recent sider plus the active
+ * route as a content card. Shared state is provided to child routes via context.
+ */
+/** Whether the onboarding tour has been seen: once seen it no longer auto-pops. Used on first entry to decide whether to show it. */
+const TOUR_SEEN_KEY = 'pc.tour.seen';
+
+/** Onboarding tour steps: introduce, in order, the drag area, the three comparison modes, sidebar navigation, and settings.
+ *  The first two steps anchor to home-page elements (falling back to sidebar navigation when not on the home page); the last two anchor to the sidebar.
+ *  The copy varies by language, so it's built dynamically via t (with each step's button text injected too). */
+function buildTourSteps(t: TFunction<'layout'>): TourProps['steps'] {
+  const raw: TourProps['steps'] = [
+    {
+      title: t('tourWelcomeTitle'),
+      description: t('tourWelcomeDesc'),
+      target: () =>
+        (document.querySelector('[data-tour="home-welcome"]') as HTMLElement) ??
+        (document.querySelector('[data-tour="sider-nav"]') as HTMLElement),
+    },
+    {
+      title: t('tourMethodsTitle'),
+      description: t('tourMethodsDesc'),
+      target: () =>
+        (document.querySelector('[data-tour="home-cards"]') as HTMLElement) ??
+        (document.querySelector('[data-tour="sider-nav"]') as HTMLElement),
+    },
+    {
+      title: t('tourSiderTitle'),
+      description: t('tourSiderDesc'),
+      target: () => document.querySelector('[data-tour="sider-nav"]') as HTMLElement,
+    },
+    {
+      title: t('tourPrefsTitle'),
+      description: t('tourPrefsDesc'),
+      target: () => document.querySelector('[data-tour="sider-settings"]') as HTMLElement,
+    },
+  ];
+  // Inject each step's button text: "next" except on the last step, "got it" on the last step, "previous" shown on non-first steps.
+  return raw.map((step, i) => ({
+    ...step,
+    nextButtonProps: { children: i === raw.length - 1 ? t('tourDone') : t('tourNext') },
+    prevButtonProps: { children: t('tourPrev') },
+  }));
+}
+
+export function AppLayout() {
+  const { t } = useTranslation('layout');
+  const [error, setError] = useState('');
+  const [recent, setRecent] = useState<HistoryEntry[]>(() => loadHistory());
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+
+  // Start the tour: first expand the sidebar (the tour points to sidebar anchors), then pop after the layout settles.
+  const startTour = () => {
+    setSiderCollapsed(false);
+    window.setTimeout(() => setTourOpen(true), 300);
+  };
+
+  // Auto-pop the tour on first use (when localStorage has no "seen" marker); runs only once on mount.
+  useEffect(() => {
+    if (localStorage.getItem(TOUR_SEEN_KEY)) return;
+    const t = window.setTimeout(() => setTourOpen(true), 300);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  // Close the tour: record that it's been seen so it no longer auto-pops afterward.
+  const closeTour = () => {
+    setTourOpen(false);
+    localStorage.setItem(TOUR_SEEN_KEY, '1');
+  };
+
+  const ctx = useMemo<ShellContext>(
+    () => ({
+      setError,
+      siderCollapsed,
+      onExpandSider: () => setSiderCollapsed(false),
+      startTour,
+      recent,
+      pushRecent: (left, right, kind = 'file', git) =>
+        setRecent(pushHistory(left, right, kind, git)),
+      removeRecent: (key) => setRecent(removeHistory(key)),
+    }),
+    [siderCollapsed, recent],
+  );
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-panel">
+      <RecentPanel
+        recent={recent}
+        collapsed={siderCollapsed}
+        onToggle={() => setSiderCollapsed((c) => !c)}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onStartTour={startTour}
+        onRemove={(key) => setRecent(removeHistory(key))}
+      />
+      <div
+        className="group/card relative flex flex-col flex-1 min-w-0 bg-surface border border-line overflow-hidden"
+        data-collapsed={siderCollapsed}
+      >
+        {error && <Alert type="error" message={error} banner showIcon closable />}
+        <Outlet context={ctx} />
+      </div>
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {/* Onboarding tour: auto-pops on first entry, and can also be started manually from the sidebar's "onboarding tour".
+          gap.radius gives the mask's highlight cutout rounded corners, consistent with the rounded style of cards/buttons. */}
+      <Tour
+        open={tourOpen}
+        onClose={closeTour}
+        onFinish={closeTour}
+        steps={buildTourSteps(t)}
+        gap={{ radius: 8, offset: 8 }}
+      />
+    </div>
+  );
+}

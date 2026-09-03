@@ -1,0 +1,295 @@
+/**
+ * Text (two-file) comparison route. Picks files (or receives dropped/replayed
+ * paths through router state) and renders the shared DiffPanel. All text-compare
+ * state (files, working copies, hover) lives here now that it is its own route.
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { Button, Divider, Space, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  LeftOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { DiffPanel, DiffPanelHandle, FileContent, LoadedFile, Side, basename } from '../diff-view';
+import { AppHeader } from '../app-header';
+import { useShell } from '../layout';
+import { useFileWatch } from '../use-file-watch';
+import { useUnsavedGuard } from '../use-unsaved-guard';
+
+/** Which pane an x-coordinate falls into (window midline split). */
+function sideForX(x: number): Side {
+  return x < window.innerWidth / 2 ? 'left' : 'right';
+}
+
+/** Router state accepted by this route (dropped or replayed file pair). */
+interface TextCompareState {
+  left?: string;
+  right?: string;
+}
+
+export function TextComparePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useTranslation(['diff', 'common']);
+  const { setError, pushRecent, siderCollapsed, onExpandSider } = useShell();
+
+  const [left, setLeft] = useState<LoadedFile | null>(null);
+  const [right, setRight] = useState<LoadedFile | null>(null);
+  // Working copies of each side's text — seeded from the file, edited by copy actions.
+  const [leftContent, setLeftContent] = useState('');
+  const [rightContent, setRightContent] = useState('');
+  const [hoverSide, setHoverSide] = useState<Side | null>(null);
+
+  async function loadFile(side: Side, path: string): Promise<boolean> {
+    setError('');
+    try {
+      const meta = await invoke<FileContent>('read_text_file', { path });
+      const loaded: LoadedFile = { path, meta };
+      if (side === 'left') {
+        setLeft(loaded);
+        setLeftContent(meta.content);
+      } else {
+        setRight(loaded);
+        setRightContent(meta.content);
+      }
+      return true;
+    } catch (e) {
+      setError(String(e));
+      return false;
+    }
+  }
+
+  // Consume router state on each navigation: load dropped/replayed paths. Keyed
+  // on location.key so re-selecting the same pair from the sidebar reloads it
+  // (a fresh navigation always yields a new key, even for identical state).
+  useEffect(() => {
+    const state = location.state as TextCompareState | null;
+    if (!state) return;
+    if (state.left && state.right) {
+      void Promise.all([loadFile('left', state.left), loadFile('right', state.right)]);
+    } else if (state.left) {
+      void loadFile('left', state.left);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
+  async function pickFile(side: Side) {
+    setError('');
+    try {
+      const selected = await open({
+        multiple: false,
+        directory: false,
+        title: side === 'left' ? t('pickLeftFile') : t('pickRightFile'),
+      });
+      if (typeof selected !== 'string') return;
+      await loadFile(side, selected);
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
+  // Native Tauri drag-drop: HTML5 ondrop cannot expose real file paths, so we
+  // listen to the webview's drag-drop events. Only the hovered side is loaded.
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    getCurrentWebview()
+      .onDragDropEvent((event) => {
+        const p = event.payload;
+        if (p.type === 'over') {
+          setHoverSide(sideForX(p.position.x));
+        } else if (p.type === 'drop') {
+          setHoverSide(null);
+          const paths = p.paths.filter(Boolean);
+          if (paths.length === 0) return;
+          const side = sideForX(p.position.x);
+          const path = paths[0];
+          // When a directory is dropped, prompt to use folder compare instead; only accept files.
+          void (async () => {
+            try {
+              const kind = await invoke<string>('path_kind', { path });
+              if (kind === 'dir') {
+                setError(t('dropFolderUseFolder'));
+                return;
+              }
+              await loadFile(side, path);
+            } catch (e) {
+              setError(String(e));
+            }
+          })();
+        } else {
+          setHoverSide(null);
+        }
+      })
+      .then((fn) => {
+        unlisten = fn;
+      });
+    return () => unlisten?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const baseNotice = useMemo(() => {
+    for (const f of [left, right]) {
+      if (!f) continue;
+      if (f.meta.is_binary) return t('binaryFile', { name: basename(f.path) });
+      if (f.meta.truncated) return t('oversized', { name: basename(f.path) });
+    }
+    return '';
+  }, [left, right, t]);
+
+  // As long as one side is selected and readable, enter the diff view; the unselected/missing
+  // side is treated as empty content, so the selected side shows entirely as added or removed,
+  // while the unselected side's column header can still pick or drop a file.
+  const leftOk = !!left && !left.meta.is_binary && !left.meta.truncated;
+  const rightOk = !!right && !right.meta.is_binary && !right.meta.truncated;
+  const canDiff = (leftOk || rightOk) && !(left && !leftOk) && !(right && !rightOk);
+
+  // Record history when both sides are selected and readable — covers the case of picking each file separately.
+  useEffect(() => {
+    if (left && right && leftOk && rightOk) {
+      pushRecent(left.path, right.path);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [left?.path, right?.path, leftOk, rightOk]);
+
+  const diffPanelRef = useRef<DiffPanelHandle>(null);
+
+  const leftDirty = !!left && leftContent !== left.meta.content;
+  const rightDirty = !!right && rightContent !== right.meta.content;
+
+  // Intercept route navigation when there are unsaved edits (controlled by a settings toggle).
+  useUnsavedGuard(leftDirty || rightDirty);
+
+  // External change watch: silently reload the side when not dirty, or set a conflict flag when dirty (shown by the notice below).
+  const leftWatch = useFileWatch({
+    path: leftOk ? (left?.path ?? null) : null,
+    dirty: leftDirty,
+    onReload: () => left && void loadFile('left', left.path),
+  });
+  const rightWatch = useFileWatch({
+    path: rightOk ? (right?.path ?? null) : null,
+    dirty: rightDirty,
+    onReload: () => right && void loadFile('right', right.path),
+  });
+
+  // The external-change conflict message takes priority over the ordinary notice (binary / oversized).
+  const notice = leftWatch.externallyChanged
+    ? t('leftChangedExternally')
+    : rightWatch.externallyChanged
+      ? t('rightChangedExternally')
+      : baseNotice;
+
+  // Edits bubbled up from within MergeView: update the corresponding side's working copy.
+  function onChange(side: Side, text: string) {
+    if (side === 'left') setLeftContent(text);
+    else setRightContent(text);
+  }
+
+  // Write a side's working copy back to its original file path.
+  async function saveFile(side: Side) {
+    const file = side === 'left' ? left : right;
+    if (!file) return;
+    const content = side === 'left' ? leftContent : rightContent;
+    setError('');
+    try {
+      const modified = await invoke<number | null>('write_text_file', {
+        path: file.path,
+        content,
+      });
+      const nextMeta: FileContent = {
+        ...file.meta,
+        content,
+        size: new TextEncoder().encode(content).length,
+        modified,
+      };
+      const updated: LoadedFile = { ...file, meta: nextMeta };
+      if (side === 'left') setLeft(updated);
+      else setRight(updated);
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
+  // Reload both files and clear the external-change notice — reused by the top header refresh button and DiffPanel.
+  function reloadAll() {
+    if (left) void loadFile('left', left.path);
+    if (right) void loadFile('right', right.path);
+    leftWatch.dismiss();
+    rightWatch.dismiss();
+  }
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <AppHeader
+        siderCollapsed={siderCollapsed}
+        onExpandSider={onExpandSider}
+        left={<Button icon={<LeftOutlined />} onClick={() => navigate('/')} />}
+        right={
+          <Space size="small">
+            {canDiff && (
+              <>
+                <Tooltip title={t('common:prevDiff')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ArrowUpOutlined />}
+                    onClick={() => diffPanelRef.current?.goPrev()}
+                  />
+                </Tooltip>
+                <Tooltip title={t('common:nextDiff')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ArrowDownOutlined />}
+                    onClick={() => diffPanelRef.current?.goNext()}
+                  />
+                </Tooltip>
+                <Tooltip title={t('common:findReplace')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<SearchOutlined />}
+                    onClick={() => diffPanelRef.current?.toggleSearch()}
+                  />
+                </Tooltip>
+                <Divider vertical className="mx-0.5" />
+              </>
+            )}
+            {(left || right) && (
+              <Tooltip title={t('common:refresh')}>
+                <Button type="text" size="small" icon={<ReloadOutlined />} onClick={reloadAll} />
+              </Tooltip>
+            )}
+          </Space>
+        }
+      />
+
+      <DiffPanel
+        ref={diffPanelRef}
+        showGlobalActions={false}
+        left={left}
+        right={right}
+        leftContent={leftContent}
+        rightContent={rightContent}
+        notice={notice}
+        canDiff={canDiff}
+        hoverSide={hoverSide}
+        onPick={pickFile}
+        onChange={onChange}
+        onSave={saveFile}
+        showStatsInFooter
+        onReload={reloadAll}
+        showReload={false}
+        leftDirty={leftDirty}
+        rightDirty={rightDirty}
+        emptyMode="pick"
+      />
+    </div>
+  );
+}

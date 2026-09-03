@@ -1,0 +1,8 @@
+node_modules
+dist
+build
+src-tauri/target
+src-tauri/gen
+public/material-icon-theme
+pnpm-lock.yaml
+*.md
