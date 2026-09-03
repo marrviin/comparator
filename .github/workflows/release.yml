@@ -10,7 +10,37 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  # 先生成 changelog 并创建唯一一条 draft release，供后续平台 job 上传产物
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create.outputs.id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史才能生成 changelog
+
+      - name: Build changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        with:
+          configuration: .github/changelog-config.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release
+        id: create
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: 'Pure Compare ${{ github.ref_name }}'
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: true
+          prerelease: false
+
+  build:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -59,14 +89,10 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      - name: Build and release
+      - name: Build and upload
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Pure Compare ${{ github.ref_name }}'
-          releaseBody: '查看下方 Assets 下载对应平台的安装包。'
-          releaseDraft: true
-          prerelease: false
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}

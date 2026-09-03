@@ -1,0 +1,52 @@
+{
+  "categories": [
+    {
+      "title": "## ✨ 新功能",
+      "labels": [],
+      "rules": [
+        { "pattern": "^feat(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
+      ]
+    },
+    {
+      "title": "## 🐛 问题修复",
+      "labels": [],
+      "rules": [
+        { "pattern": "^fix(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
+      ]
+    },
+    {
+      "title": "## ⚡ 性能优化",
+      "labels": [],
+      "rules": [
+        { "pattern": "^perf(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
+      ]
+    },
+    {
+      "title": "## ♻️ 重构",
+      "labels": [],
+      "rules": [
+        { "pattern": "^refactor(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
+      ]
+    },
+    {
+      "title": "## 🔧 杂项与维护",
+      "labels": [],
+      "rules": [
+        { "pattern": "^(chore|build|ci|docs|style|test)(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
+      ]
+    },
+    {
+      "title": "## 📦 其他改动",
+      "labels": [],
+      "rules": [
+        { "pattern": ".*", "on_property": "title", "flags": "gim" }
+      ]
+    }
+  ],
+  "template": "#{{CHANGELOG}}\n\n---\n\n**完整变更**: #{{RELEASE_DIFF}}\n\n> 下方 Assets 中下载对应平台的安装包。",
+  "category_template": "#{{TITLE}}\n\n#{{CHANGELOG}}",
+  "pr_template": "- #{{TITLE}} (#{{MERGE_SHA}})",
+  "empty_template": "- 无显著改动",
+  "commit_template": "- #{{TITLE}}",
+  "trim_values": true
+}
