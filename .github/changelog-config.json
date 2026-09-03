@@ -1,52 +1,46 @@
 {
   "categories": [
     {
-      "title": "## ✨ 新功能",
+      "title": "## ✨ Features",
+      "labels": [],
+      "rules": [{ "pattern": "^feat(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }]
+    },
+    {
+      "title": "## 🐛 Bug Fixes",
+      "labels": [],
+      "rules": [{ "pattern": "^fix(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }]
+    },
+    {
+      "title": "## ⚡ Performance",
+      "labels": [],
+      "rules": [{ "pattern": "^perf(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }]
+    },
+    {
+      "title": "## ♻️ Refactoring",
+      "labels": [],
+      "rules": [{ "pattern": "^refactor(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }]
+    },
+    {
+      "title": "## 🔧 Chores & Maintenance",
       "labels": [],
       "rules": [
-        { "pattern": "^feat(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
+        {
+          "pattern": "^(chore|build|ci|docs|style|test)(\\(.*\\))?!?:",
+          "on_property": "title",
+          "flags": "gim"
+        }
       ]
     },
     {
-      "title": "## 🐛 问题修复",
+      "title": "## 📦 Other Changes",
       "labels": [],
-      "rules": [
-        { "pattern": "^fix(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
-      ]
-    },
-    {
-      "title": "## ⚡ 性能优化",
-      "labels": [],
-      "rules": [
-        { "pattern": "^perf(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
-      ]
-    },
-    {
-      "title": "## ♻️ 重构",
-      "labels": [],
-      "rules": [
-        { "pattern": "^refactor(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
-      ]
-    },
-    {
-      "title": "## 🔧 杂项与维护",
-      "labels": [],
-      "rules": [
-        { "pattern": "^(chore|build|ci|docs|style|test)(\\(.*\\))?!?:", "on_property": "title", "flags": "gim" }
-      ]
-    },
-    {
-      "title": "## 📦 其他改动",
-      "labels": [],
-      "rules": [
-        { "pattern": ".*", "on_property": "title", "flags": "gim" }
-      ]
+      "rules": [{ "pattern": ".*", "on_property": "title", "flags": "gim" }]
     }
   ],
-  "template": "#{{CHANGELOG}}\n\n---\n\n**完整变更**: #{{RELEASE_DIFF}}\n\n> 下方 Assets 中下载对应平台的安装包。",
+  "template": "#{{CHANGELOG}}\n\n---\n\n**Full Changelog**: #{{RELEASE_DIFF}}\n\n> Download the installer for your platform from the Assets below.",
   "category_template": "#{{TITLE}}\n\n#{{CHANGELOG}}",
   "pr_template": "- #{{TITLE}} (#{{MERGE_SHA}})",
-  "empty_template": "- 无显著改动",
+  "empty_template": "- No notable changes",
   "commit_template": "- #{{TITLE}}",
   "trim_values": true
 }
