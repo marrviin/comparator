@@ -65,9 +65,13 @@ export function basename(p: string): string {
   return parts[parts.length - 1] || p;
 }
 
-/** Stable key for a history entry (kind + repo + both sides). */
+/**
+ * Stable key for a history entry — also the dedupe identity:
+ * - git: the repository root only (one entry per repo, whatever refs were compared);
+ * - file/folder: kind + both paths (the same pair of paths compared as files vs folders are distinct entries).
+ */
 export function entryKey(e: HistoryEntry): string {
-  return `${e.kind}|${e.repo ?? ''}|${e.left}|${e.right}`;
+  return e.kind === 'git' ? `git|${e.repo ?? ''}` : `${e.kind}|${e.left}|${e.right}`;
 }
 
 /** Read the recent list; returns [] on missing or malformed storage. */
@@ -94,9 +98,10 @@ export function loadHistory(): HistoryEntry[] {
 }
 
 /**
- * Record a compared pair. Dedupes on kind+left+right+repo: if the pair already
- * exists it is kept in place (creation order preserved, only its ts refreshed);
- * a brand-new pair is inserted at the front. Caps at MAX and returns the list.
+ * Record a compared pair. Dedupes on {@link entryKey}'s identity (git: repo only;
+ * file/folder: kind + both paths): an existing entry keeps its creation position
+ * but is refreshed to the latest comparison's paths/refs/ts; a brand-new pair is
+ * inserted at the front. Caps at MAX and returns the list.
  *
  * For git comparisons pass `git` with the repo root and the two ref labels;
  * `left`/`right` then carry the ref strings (from/to) instead of file paths.
@@ -117,13 +122,13 @@ export function pushHistory(
     ts: Date.now(),
   };
   const list = loadHistory();
-  const idx = list.findIndex(
-    (e) => e.left === left && e.right === right && e.kind === kind && e.repo === entry.repo,
-  );
-  // An existing comparison keeps its original creation position (only ts is refreshed); a brand-new comparison is inserted at the front.
+  // entryKey is the dedupe identity; on a match the stored entry is refreshed in
+  // place — for git this also moves its refs to the most recent comparison, so
+  // reopening the entry restores what was last looked at.
+  const idx = list.findIndex((e) => entryKey(e) === entryKey(entry));
   const next =
     idx >= 0
-      ? list.map((e, i) => (i === idx ? { ...e, ts: entry.ts } : e))
+      ? list.map((e, i) => (i === idx ? { ...e, ...entry } : e))
       : [entry, ...list].slice(0, MAX);
   try {
     localStorage.setItem(KEY, JSON.stringify(next));

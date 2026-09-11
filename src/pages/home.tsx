@@ -87,10 +87,16 @@ function RecentRow({
           draggable={false}
         />
         <span className="flex-1 min-w-0 flex items-center gap-1 text-sm truncate">
-          {entry.kind === 'git' && entry.repo && <span>{basename(entry.repo)}:</span>}
-          <span className="truncate">{entry.leftName}</span>
-          <RetweetOutlined className="text-muted text-[12px] flex-none" />
-          <span className="truncate">{entry.rightName}</span>
+          {/* Git comparisons dedupe per repo and show only the repo's directory name. */}
+          {entry.kind === 'git' ? (
+            <span className="truncate">{basename(entry.repo ?? '')}</span>
+          ) : (
+            <>
+              <span className="truncate">{entry.leftName}</span>
+              <RetweetOutlined className="text-muted text-[12px] flex-none" />
+              <span className="truncate">{entry.rightName}</span>
+            </>
+          )}
         </span>
       </button>
     </Tooltip>

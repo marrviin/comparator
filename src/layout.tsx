@@ -7,8 +7,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom';
-import { Alert, Dropdown, Empty, Tooltip, Tour } from 'antd';
-import type { MenuProps, TourProps } from 'antd';
+import { Alert, Empty, Tooltip, Tour } from 'antd';
+import type { TourProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { ConversationsProps } from '@ant-design/x';
@@ -70,6 +70,29 @@ export function useShell() {
 }
 
 /**
+ * Re-renders once a minute so the relative "last opened" labels on recent items
+ * (刚刚 → 1分钟前 → …) age in place without any per-item timers.
+ */
+function useMinuteTick(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return now;
+}
+
+/** Relative time for a recent entry's ts: 刚刚 / N分钟前 / N小时前 / N天前. */
+function relativeTime(ts: number, now: number, t: TFunction<'layout'>): string {
+  const minutes = Math.floor((now - ts) / 60_000);
+  if (minutes < 1) return t('justNow');
+  if (minutes < 60) return t('minutesAgo', { n: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t('hoursAgo', { n: hours });
+  return t('daysAgo', { n: Math.floor(hours / 24) });
+}
+
+/**
  * Name for a "recent comparison" list item: single-line ellipsis by default; on
  * hover, if the text overflows, it scrolls left in a loop to show the full content.
  * After mount / content change, it measures the overflow amount and writes it into
@@ -116,8 +139,8 @@ function MarqueeLabel({ text }: { text: ReactNode }) {
     };
   }, [text]);
 
-  // Constant 40px/s speed keeps long and short names scrolling at the same pace (a stop frame at each end adds a pause).
-  const duration = shift > 0 ? Math.max(3, shift / 40 + 1.5) : 0;
+  // Constant 160px/s speed keeps long and short names scrolling at the same pace (a stop frame at each end adds a pause).
+  const duration = shift > 0 ? Math.max(1.5, shift / 160 + 0.4) : 0;
   return (
     <span
       ref={wrapRef}
@@ -160,6 +183,7 @@ function RecentPanel({
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation('layout');
+  const now = useMinuteTick();
   // Top navigation items (aligned with joybuddy's navItems). Just add to the array,
   // and Conversations handles unified styling/interaction automatically.
   const navItems: ConversationsProps['items'] = [
@@ -179,43 +203,33 @@ function RecentPanel({
       icon: <MaterialNavIcon name="git" />,
     },
   ];
-  // Recent-comparison list items: key uses kind|left|right for unique identification; icon distinguishes file/folder by type.
+  // Recent-comparison list items: key uses entryKey (kind|paths, git: repo) for unique identification;
+  // icon distinguishes file/folder by type. The delete menu hangs off the Conversations-level
+  // `menu` prop: hovering an item fades in a three-dot button on the right, click to open the menu.
   const recentItems: ConversationsProps['items'] = recent.map((e) => {
     const key = entryKey(e);
-    // Right-click (context menu) on a recent item to remove it from history.
-    const menu: MenuProps = {
-      items: [
-        {
-          key: 'remove',
-          danger: true,
-          icon: <DeleteOutlined />,
-          label: t('removeRecent'),
-        },
-      ],
-      onClick: ({ key: menuKey, domEvent }) => {
-        domEvent.stopPropagation();
-        if (menuKey === 'remove') onRemove(key);
-      },
-    };
     return {
       key,
       label: (
-        <Dropdown menu={menu} trigger={['contextMenu']}>
-          <span className="block w-full">
-            <MarqueeLabel
-              text={
+        <span className="recent-item-row">
+          <MarqueeLabel
+            text={
+              // Git comparisons dedupe per repo and show only the repo's directory
+              // name; file/folder comparisons show the left/right pair.
+              e.kind === 'git' ? (
+                <span className="recent-name">{basename(e.repo ?? '')}</span>
+              ) : (
                 <span className="recent-line">
-                  {e.kind === 'git' && e.repo && (
-                    <span className="recent-name">{basename(e.repo)}:</span>
-                  )}
                   <span className="recent-name">{e.leftName}</span>
                   <RetweetOutlined className="recent-swap text-muted text-[12px]" />
                   <span className="recent-name">{e.rightName}</span>
                 </span>
-              }
-            />
-          </span>
-        </Dropdown>
+              )
+            }
+          />
+          {/* Last-opened time, hidden on hover so the three-dot menu takes over the right edge. */}
+          <span className="recent-time">{relativeTime(e.ts, now, t)}</span>
+        </span>
       ),
       icon:
         e.kind === 'git' ? (
@@ -288,10 +302,26 @@ function RecentPanel({
               className="flex-1 min-h-0 overflow-auto px-2 pb-2 pt-0"
               classNames={{ item: 'h-8 min-h-8' }}
               activeKey=""
+              // Hover a recent item → the built-in three-dot button fades in at its right
+              // edge; clicking it opens this dropdown (delete). The built-in trigger already
+              // stops propagation, so the click never navigates the item.
+              menu={(item) => ({
+                items: [
+                  {
+                    key: 'remove',
+                    danger: true,
+                    icon: <DeleteOutlined />,
+                    label: t('removeRecent'),
+                  },
+                ],
+                onClick: ({ key: menuKey, domEvent }) => {
+                  domEvent.stopPropagation();
+                  if (menuKey === 'remove') onRemove(item.key);
+                },
+              })}
               onActiveChange={(key) => {
-                const entry = recent.find(
-                  (e) => `${e.kind}|${e.repo ?? ''}|${e.left}|${e.right}` === key,
-                );
+                // Key lookup must go through entryKey — it's both the item key and the dedupe identity.
+                const entry = recent.find((e) => entryKey(e) === key);
                 if (entry) {
                   navigate(
                     entry.kind === 'git'
@@ -329,16 +359,14 @@ function RecentPanel({
         </aside>
       </div>
       {!collapsed && (
-        <Tooltip title={t('collapseSider')} placement="right">
-          <button
-            type="button"
-            aria-label={t('collapseSider')}
-            className="text-[14px] absolute top-[11px] left-51 z-20 flex items-center justify-center w-7 h-7 rounded-md text-muted bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
-            onClick={onToggle}
-          >
-            <SidebarToggleSvg />
-          </button>
-        </Tooltip>
+        <button
+          type="button"
+          aria-label={t('collapseSider')}
+          className="text-[14px] absolute top-[11px] left-51 z-20 flex items-center justify-center w-7 h-7 rounded-md text-muted bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
+          onClick={onToggle}
+        >
+          <SidebarToggleSvg />
+        </button>
       )}
     </div>
   );

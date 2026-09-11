@@ -64,6 +64,12 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  /* The app is a fixed-viewport shell (h-screen + overflow-hidden), and every page
+   * scrolls inside its own panes. antd Tooltip/popover portals mount into
+   * document.body and are briefly positioned before being measured/adjusted; near
+   * a window edge that pre-adjustment position overflows the viewport and flashes
+   * document-level scrollbars. Lock the root so the document can never scroll. */
+  overflow: hidden;
 }
 
 body {
@@ -210,6 +216,66 @@ body {
  * padding) that's disconnected from this project's theme. Here we re-hang the item's spacing/background/text
  * onto project tokens, so the height and content spacing match joybuddy's sidebar. Only the sidebar mounts this component, so the global prefix is safe. */
 @layer components {
+  /* Recent item label row: marquee + last-opened time share the width. */
+  .recent-item-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+  }
+  /* Inside the row the marquee flexes instead of filling 100% by default. */
+  .recent-item-row > .recent-marquee {
+    flex: 1 1 auto;
+    width: auto;
+  }
+  /* Last-opened time pinned to the row's right edge; hidden on hover so the
+   * built-in three-dot menu icon (which fades in on item hover) takes over.
+   * visibility (not display) keeps the slot reserved, so the marquee text can
+   * never slide underneath the dots. The time hides with the same 0.25s delay
+   * as the dots' delayed fade-in (no blank gap), but comes back instantly on
+   * mouse-out — transitions resolve against the destination state, so the
+   * delay only lives on the :hover rule. */
+  .recent-time {
+    flex: none;
+    padding-left: 6px;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--color-muted);
+    white-space: nowrap;
+    transition: visibility 0s;
+  }
+  .ant-conversations-item:hover .recent-time {
+    visibility: hidden;
+    transition: visibility 0s 0.25s;
+  }
+  /* Take the three-dot trigger out of flow and pin it to the item's right edge:
+   * its (invisible) inline slot would otherwise sit between the marquee and the
+   * time, keeping the time from sitting flush right. Delayed fade-in on item
+   * hover (skims across rows don't flash the dots), immediate fade-out on leave —
+   * transitions resolve against the destination state, so the 0.25s delay only
+   * lives on the :hover rules. */
+  .ant-conversations-item .ant-conversations-menu-icon {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .ant-conversations-item:hover .ant-conversations-menu-icon {
+    opacity: 0.6;
+    transition: opacity 0.15s ease 0.25s;
+  }
+  .ant-conversations-item .ant-conversations-menu-icon:hover {
+    opacity: 1;
+    transition: opacity 0.15s ease;
+  }
+  /* X's item row is flex with an 8px gap; the dots' zero-width wrapper div still
+   * occupies a slot, so its gap keeps the label (and the time at its right edge)
+   * ~8px left of the pinned dots. Cancel that last gap to align both right edges. */
+  .ant-conversations-item > div:has(> .ant-conversations-menu-icon) {
+    margin-right: calc(var(--ant-padding-xs, 8px) * -1);
+  }
   .ant-conversations-item {
     color: var(--ant-color-text);
     position: relative;
