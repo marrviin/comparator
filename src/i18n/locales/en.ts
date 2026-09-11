@@ -65,6 +65,7 @@ const en = {
     dropDirOnly: 'Folder compare only accepts directories. Please drop a folder.',
     sameContent: 'The two directories are identical',
     waitOtherSide: 'Waiting for the other directory',
+    treeTab: 'Directory Compare',
     copyToRight: 'Copy to right',
     copyToLeft: 'Copy to left',
     deleteToTrash: 'Move to trash',
@@ -85,6 +86,7 @@ const en = {
     needGitRoot: 'Must be a repository root containing .git',
     checkoutToWorktree: 'Checkout to working tree',
     deleteToTrash: 'Move to trash',
+    treeTab: 'Git Compare',
   },
   diff: {
     pickLeftFile: 'Select left file',
@@ -134,6 +136,10 @@ const en = {
     unsavedContent: 'Leaving will discard your unsaved changes. Are you sure you want to leave?',
     unsavedLeave: 'Leave',
     unsavedStay: 'Stay',
+    closeTab: 'Close Tab',
+    closeOthers: 'Close Other Tabs',
+    closeAllTabs: 'Close All Tabs',
+    dirtyTab: 'Unsaved changes',
   },
   settings: {
     general: 'General',

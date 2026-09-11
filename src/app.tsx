@@ -15,12 +15,8 @@ import { SettingsProvider, useSettings } from './settings';
 import type { Lang } from './i18n';
 import { HomePage } from './pages/home';
 import { TextComparePage } from './pages/text-compare';
-import { FolderCompareLayout } from './pages/folder-compare';
-import { FolderIndexPage } from './pages/folder-index';
-import { FolderFilePage } from './pages/folder-file';
-import { GitCompareLayout } from './pages/git-compare';
-import { GitIndexPage } from './pages/git-index';
-import { GitFilePage } from './pages/git-file';
+import { FolderComparePage } from './pages/folder-compare';
+import { GitComparePage } from './pages/git-compare';
 
 // History (Browser) router: Tauri serves the app from a single-origin custom
 // protocol (tauri://localhost) whose root is "/", so history routing works
@@ -32,22 +28,11 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'text-compare', element: <TextComparePage /> },
-      {
-        path: 'folder-compare',
-        element: <FolderCompareLayout />,
-        children: [
-          { index: true, element: <FolderIndexPage /> },
-          { path: 'file', element: <FolderFilePage /> },
-        ],
-      },
-      {
-        path: 'git-compare',
-        element: <GitCompareLayout />,
-        children: [
-          { index: true, element: <GitIndexPage /> },
-          { path: 'file', element: <GitFilePage /> },
-        ],
-      },
+      // Folder/git compare are single routes with internal tabs: the active tab
+      // is mirrored as the `?file=` search param; the former `file` child
+      // routes became always-mounted panes inside the pages.
+      { path: 'folder-compare', element: <FolderComparePage /> },
+      { path: 'git-compare', element: <GitComparePage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

@@ -1,49 +1,80 @@
 /**
- * Folder comparison layout route. Owns the folder-level state (the two picked
- * directories, the diff tree, and the currently opened relative path) and hands
- * it to its child routes via outlet context, so navigating into a file detail
- * page and back preserves the picked folders and computed tree.
+ * Folder comparison page (single route, tab-based, Beyond-Compare style).
  *
- * Children:
- *   index  -> FolderIndexPage  (folder pickers + diff tree)
- *   /file  -> FolderFilePage   (independent side-by-side detail, mirrors text)
+ * Owns the folder-level state (the two picked directories, the diff tree) plus
+ * the file tab system: tab #0 is the directory tree (always mounted, hidden
+ * while a file tab is active), and every file opened from the tree gets its
+ * own always-mounted pane, so scroll position / cursor / undo / dirty state
+ * survive tab switches. The active tab is mirrored in the `?file=` search
+ * param, which keeps useUnsavedGuard's pathname-based route-leave blocker
+ * semantics intact (search-only switches pass through).
+ *
+ * Panes:
+ *   FolderTreePane   — directory pickers + diff tree (src/pages/folder-index.tsx)
+ *   FolderFilePane   — per-file side-by-side diff (src/pages/folder-file.tsx)
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useLocation, useOutletContext } from 'react-router-dom';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
+import { useTranslation } from 'react-i18next';
+import cx from 'classnames';
 import { DiffEntry } from '../diff-tree';
-import { Side } from '../diff-view';
+import { Side, basename } from '../diff-view';
 import { ShellContext, useShell } from '../layout';
 import { useSettings } from '../settings';
+import { AppHeader } from '../app-header';
+import { TabBar, type TabBarTab } from '../tab-bar';
+import { TREE_TAB_KEY, useFileTabs } from '../use-file-tabs';
+import { useUnsavedGuard } from '../use-unsaved-guard';
+import { materialIconUrl, materialIconUrlByName } from '../material-icons';
+import { FolderTreePane } from './folder-index';
+import { FolderFilePane } from './folder-file';
 
-/** Context handed to the folder child routes: shell context + folder state. */
+/** Context handed to the folder panes: shell context + folder state + tab api. */
 export interface FolderContext extends ShellContext {
   leftDir: string | null;
   rightDir: string | null;
   entries: DiffEntry[];
-  selectedPath: string | null;
+  /** Active file tab path; null = the tree tab. Drives the tree's row highlight. */
+  activePath: string | null;
+  /** Open (or activate) the tab for a tree file. */
+  openFile: (path: string) => void;
+  /** Report a pane's dirty state so tab close/leave guards can confirm. */
+  reportDirty: (path: string, dirty: boolean) => void;
   /** Set one side's directory and (once both are set) recompute the diff. */
   setDir: (side: Side, path: string) => Promise<void>;
   /** Set both sides at once (dropping two folders together) and recompute. */
   setDirs: (dirs: { left?: string; right?: string }) => Promise<void>;
-  /** Remember which file the detail page should open. */
-  setSelectedPath: (path: string | null) => void;
-  /** Shared tree-expanded keys, hoisted here so they survive index <-> file navigation. */
+  /** Shared tree-expanded keys, hoisted so they survive tab switches. */
   expandedKeys: string[];
   setExpandedKeys: (keys: string[]) => void;
   /** Recompute the diff for the two currently-picked directories. */
   refresh: () => Promise<void>;
 }
 
-/** Typed accessor for the folder outlet context. */
+const FolderCtx = createContext<FolderContext | null>(null);
+
+/** Typed accessor for the folder context (used by both panes). */
 export function useFolder() {
-  return useOutletContext<FolderContext>();
+  const ctx = useContext(FolderCtx);
+  if (!ctx) throw new Error('useFolder must be used within FolderComparePage');
+  return ctx;
 }
 
-export function FolderCompareLayout() {
+export function FolderComparePage() {
   const shell = useShell();
   const { setError } = shell;
   const { settings } = useSettings();
+  const { t } = useTranslation(['folder', 'common']);
+  const navigate = useNavigate();
   // Ignore parameters for diff_dirs (directories + whitespace/case). Kept in a ref so callbacks read the latest values,
   // avoiding stuffing settings into the useCallback deps, which would rebuild setDir/refresh frequently.
   const diffArgsRef = useRef({
@@ -61,15 +92,32 @@ export function FolderCompareLayout() {
   const [leftDir, setLeftDir] = useState<string | null>(null);
   const [rightDir, setRightDir] = useState<string | null>(null);
   const [entries, setEntries] = useState<DiffEntry[]>([]);
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  // Hoisted so the tree's expansion survives the round-trip into the file detail page
-  // (the index page unmounts there; this layout does not). Cleared on each new diff.
+  // Shared tree-expanded keys: hoisted here so they survive tab switches; cleared on each new diff.
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+  // Per-tab dirty state, reported by each FolderFilePane; feeds the tab close/leave guards.
+  const [dirtyMap, setDirtyMap] = useState<Record<string, boolean>>({});
+  const reportDirty = useCallback((path: string, dirty: boolean) => {
+    setDirtyMap((prev) => (prev[path] === dirty ? prev : { ...prev, [path]: dirty }));
+  }, []);
+
+  const tabsApi = useFileTabs({
+    basePath: '/folder-compare',
+    isDirty: (p) => !!dirtyMap[p],
+  });
+  const { tabs, activePath, openFile, activate, closeTab, closeOthers, closeAll, resetForNewDiff } =
+    tabsApi;
+
+  // Route-leave guard, hoisted to the page: fires when leaving /folder-compare
+  // with any dirty tab (search-only tab switches never hit the pathname check).
+  useUnsavedGuard(tabs.some((p) => !!dirtyMap[p]));
 
   // Compute the diff: allow only one side to exist (pass an empty string for the missing side; the backend marks the other side entirely as added/removed),
   // so importing one side first immediately shows its directory contents without waiting for the other side.
   const runDiff = useCallback(
     async (l: string | null, r: string | null) => {
+      // A new diff wipes the file tabs (paths belong to the old directory pair);
+      // confirm first when any tab has unsaved edits — cancel aborts everything.
+      if (!(await resetForNewDiff())) return;
       if (!l && !r) {
         setEntries([]);
         return;
@@ -82,24 +130,25 @@ export function FolderCompareLayout() {
           ...diffArgsRef.current,
         });
         setEntries(result);
-        setSelectedPath(null);
         setExpandedKeys([]);
       } catch (e) {
         setError(String(e));
       }
     },
-    [setError],
+    [setError, resetForNewDiff],
   );
 
   const setDir = useCallback(
     async (side: Side, path: string) => {
       const l = side === 'left' ? path : leftDir;
       const r = side === 'right' ? path : rightDir;
+      // Set the picked dir only after the discard confirm passed (cancel keeps the old pair).
+      if (!(await resetForNewDiff())) return;
       if (side === 'left') setLeftDir(path);
       else setRightDir(path);
       await runDiff(l, r);
     },
-    [leftDir, rightDir, runDiff],
+    [leftDir, rightDir, runDiff, resetForNewDiff],
   );
 
   // Set both sides at once (dragging in two directories together) and compute the diff immediately.
@@ -107,11 +156,12 @@ export function FolderCompareLayout() {
     async (dirs: { left?: string; right?: string }) => {
       const l = dirs.left ?? leftDir;
       const r = dirs.right ?? rightDir;
+      if (!(await resetForNewDiff())) return;
       if (dirs.left !== undefined) setLeftDir(dirs.left);
       if (dirs.right !== undefined) setRightDir(dirs.right);
       await runDiff(l, r);
     },
-    [leftDir, rightDir, runDiff],
+    [leftDir, rightDir, runDiff, resetForNewDiff],
   );
 
   // Consume router state on each navigation: apply the directories passed from
@@ -119,17 +169,22 @@ export function FolderCompareLayout() {
   // location.key so re-selecting the same folder pair from the sidebar reloads
   // it (a fresh navigation always yields a new key, even for identical state),
   // instead of staying on an empty folder-compare page when already on this route.
+  // Tab switches also produce a new location.key but carry no state — the
+  // early-return below makes them inert.
   const location = useLocation();
   useEffect(() => {
     const { left, right } = (location.state as { left?: string; right?: string } | null) ?? {};
     if (!left && !right) return;
-    setLeftDir(left ?? null);
-    setRightDir(right ?? null);
-    void runDiff(left ?? null, right ?? null);
+    void (async () => {
+      if (!(await resetForNewDiff())) return;
+      setLeftDir(left ?? null);
+      setRightDir(right ?? null);
+      await runDiff(left ?? null, right ?? null);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 
-  // Recompute the diff after a copy/write, but keep the currently selected file (don't clear selectedPath).
+  // Recompute the diff after a copy/write, but keep the open tabs (don't wipe them).
   const refresh = useCallback(async () => {
     if (!leftDir && !rightDir) return;
     setError('');
@@ -158,22 +213,106 @@ export function FolderCompareLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leftDir, rightDir]);
 
+  // Tab strip: the closable tree tab + one tab per opened file. Every tab has a
+  // close button; the tree tab is the session's last tab, so closing it (with any
+  // unsaved edits confirmed by useUnsavedGuard) leaves for home.
+  const tabBarTabs = useMemo<TabBarTab[]>(
+    () => [
+      {
+        key: TREE_TAB_KEY,
+        label: t('treeTab'),
+        iconUrl: materialIconUrlByName('folder-base-open'),
+        closable: true,
+      },
+      ...tabs.map((path) => ({
+        key: path,
+        label: basename(path),
+        iconUrl: materialIconUrl(basename(path)),
+        title: path,
+        closable: true,
+        dirty: !!dirtyMap[path],
+      })),
+    ],
+    [tabs, dirtyMap, t],
+  );
+
+  const onTabSelect = useCallback(
+    (key: string) => activate(key === TREE_TAB_KEY ? null : key),
+    [activate],
+  );
+
+  const onTabClose = useCallback(
+    (key: string) => {
+      if (key === TREE_TAB_KEY) navigate('/');
+      else closeTab(key);
+    },
+    [closeTab, navigate],
+  );
+
   const ctx = useMemo<FolderContext>(
     () => ({
       ...shell,
       leftDir,
       rightDir,
       entries,
-      selectedPath,
+      activePath,
+      openFile,
+      reportDirty,
       setDir,
       setDirs,
-      setSelectedPath,
       expandedKeys,
       setExpandedKeys,
       refresh,
     }),
-    [shell, leftDir, rightDir, entries, selectedPath, setDir, setDirs, expandedKeys, refresh],
+    [
+      shell,
+      leftDir,
+      rightDir,
+      entries,
+      activePath,
+      openFile,
+      reportDirty,
+      setDir,
+      setDirs,
+      expandedKeys,
+      refresh,
+    ],
   );
 
-  return <Outlet context={ctx} />;
+  return (
+    <FolderCtx.Provider value={ctx}>
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <AppHeader
+          siderCollapsed={shell.siderCollapsed}
+          onExpandSider={shell.onExpandSider}
+          tabs={
+            <TabBar
+              tabs={tabBarTabs}
+              activeKey={activePath ?? TREE_TAB_KEY}
+              onSelect={onTabSelect}
+              onClose={onTabClose}
+              onCloseOthers={closeOthers}
+              onCloseAll={closeAll}
+            />
+          }
+        />
+
+        {/* All panes stay mounted; inactive ones are merely hidden so their
+            editor state (scroll/cursor/undo/dirty) survives tab switches. */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className={cx('flex flex-col flex-1 min-h-0', activePath !== null && 'hidden')}>
+            <FolderTreePane active={activePath === null} />
+          </div>
+          {tabs.map((path) => (
+            <div
+              key={path}
+              className={cx('flex flex-col flex-1 min-h-0', path !== activePath && 'hidden')}
+            >
+              <FolderFilePane path={path} active={path === activePath} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </FolderCtx.Provider>
+  );
 }

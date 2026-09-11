@@ -3,6 +3,11 @@
  * confirmOnUnsaved setting is on, intercept in-app route navigation and show an antd confirm
  * dialog: confirm to proceed (discard changes), cancel to stay on the current page.
  *
+ * The blocker only fires when the pathname changes, so switching file tabs inside the
+ * folder/git compare pages (which only changes the `file` search param) passes through
+ * without a prompt — that is correct, because every tab pane stays mounted and nothing
+ * is lost. The compare pages hoist one call with "any tab dirty" as the flag.
+ *
  * Uses react-router's useBlocker (only available with a data router; this project uses
  * createBrowserRouter, which qualifies). Window close (Tauri native) is not handled here --
  * saving is already an explicit action, and intercepting native close requires a separate

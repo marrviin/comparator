@@ -1,24 +1,21 @@
 /**
- * Folder comparison index page (two-pane layout, matching the file-comparison visuals):
- *   - A minimal header at the top (back + sidebar expand), no longer showing a "folder comparison" title;
+ * Folder comparison tree pane (the fixed tab #0 inside FolderComparePage):
  *   - Each of the left/right panes has a column header: shows the selected directory name + icon buttons to open/change the directory;
  *   - Each of the left/right panes renders the same diff records (DiffSideTable), marking diffs with color/placeholders;
  *   - The bottom shows each side's file count on the left/right;
  *   - Right-clicking a diff node pops a menu: copy to the other side, delete to trash; the diff is recomputed after the action.
- * Clicking a file node that exists on a side enters the /folder-compare/file detail page.
+ * Clicking a file node opens it as a file tab (see useFileTabs on the owning page).
  */
 import { useEffect, useMemo, useState } from 'react';
 import cx from 'classnames';
-import { useNavigate } from 'react-router-dom';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { Button, Empty, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { FolderOpenOutlined, LeftOutlined, ReloadOutlined } from '@ant-design/icons';
+import { FolderOpenOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Side } from '../diff-view';
 import { DiffMenuAction, DiffSideTable, buildRecords, folderColumns } from '../diff-table';
-import { AppHeader } from '../app-header';
 import { useScrollSync } from '../scroll-sync';
 import { useFolder } from './folder-compare';
 
@@ -27,22 +24,19 @@ function sideForX(x: number): Side {
   return x < window.innerWidth / 2 ? 'left' : 'right';
 }
 
-export function FolderIndexPage() {
-  const navigate = useNavigate();
+export function FolderTreePane({ active }: { active: boolean }) {
   const { t, i18n } = useTranslation(['folder', 'common']);
   // Column-header labels under the diff namespace (size/mtime/name); folderColumns needs it + the current locale.
   const { t: td } = useTranslation('diff');
   const {
     setError,
-    siderCollapsed,
-    onExpandSider,
     leftDir,
     rightDir,
     entries,
-    selectedPath,
+    activePath,
+    openFile,
     setDir,
     setDirs,
-    setSelectedPath,
     expandedKeys,
     setExpandedKeys,
     refresh,
@@ -52,8 +46,7 @@ export function FolderIndexPage() {
 
   // Both sides share one expanded set (Beyond Compare-style linkage): expanding/collapsing a directory on either side
   // applies to both panes, keeping the row counts identical -> sync scrolling can align strictly.
-  // Hoisted into the folder layout so the expansion survives the round-trip into the file detail
-  // page; the layout clears it whenever a new diff is computed.
+  // Hoisted into the page so the expansion survives tab switches; cleared whenever a new diff is computed.
 
   async function pickDir(side: Side) {
     setError('');
@@ -71,7 +64,10 @@ export function FolderIndexPage() {
   }
 
   // Native Tauri drag-and-drop: dragging a folder onto one half sets that side's directory.
+  // Gated on `active` — the pane stays mounted while a file tab is on top, and an ungated
+  // listener would react to drops made while another pane is visible.
   useEffect(() => {
+    if (!active) return;
     let unlisten: (() => void) | undefined;
     getCurrentWebview()
       .onDragDropEvent((event) => {
@@ -117,12 +113,7 @@ export function FolderIndexPage() {
       });
     return () => unlisten?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leftDir, rightDir]);
-
-  function openFile(path: string) {
-    setSelectedPath(path);
-    navigate('/folder-compare/file');
-  }
+  }, [active, leftDir, rightDir]);
 
   // Copy a file/folder to the other side: from the `from` side -> the mirror path on the other side; recompute the diff when done.
   async function copyEntry(path: string, _isDir: boolean, from: Side) {
@@ -264,7 +255,7 @@ export function FolderIndexPage() {
             side={side}
             records={records}
             columns={columns}
-            selectedPath={selectedPath}
+            selectedPath={activePath}
             onSelect={openFile}
             menuActions={menuActions}
             scrollRegister={scrollRegister}
@@ -278,12 +269,6 @@ export function FolderIndexPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <AppHeader
-        siderCollapsed={siderCollapsed}
-        onExpandSider={onExpandSider}
-        left={<Button icon={<LeftOutlined />} onClick={() => navigate('/')} />}
-      />
-
       {/* Left/right column headers: directory name + open-directory button. */}
       <div className="flex bg-panel border-b border-line [-webkit-app-region:no-drag]">
         {colHead('left', leftDir)}

@@ -289,10 +289,30 @@ body {
  * The goal is to make the Table look like a compact directory tree: remove heavy borders, compress row height, no cell wrapping. */
 .diff-side-table,
 .diff-side-table .ant-table-wrapper,
+.diff-side-table .ant-spin,
 .diff-side-table .ant-spin-nested-loading,
 .diff-side-table .ant-spin-container,
 .diff-side-table .ant-table {
   height: 100%;
+}
+/* Stretch the virtual body to fill the space below the header so the floating
+ * horizontal scrollbar (absolute, bottom: 0 inside the virtual container) docks
+ * at the bottom of the pane instead of right under the last row — a short file
+ * list must still fill the page vertically. */
+.diff-side-table .ant-table-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.diff-side-table .ant-table-tbody-virtual {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* antd inline-sets max-height to the raw scroll.y (the full pane height, header
+ * included) on the holder; clamp it to the flexed body area instead so the pane
+ * never gains an outer vertical scrollbar from the header's height. */
+.diff-side-table .ant-table-tbody-virtual-holder {
+  max-height: 100% !important;
 }
 .diff-side-table .ant-table {
   background: transparent;
@@ -481,4 +501,109 @@ body {
       transform: translateX(var(--marquee-shift, 0));
     }
   }
+}
+
+/* ── Chrome-style header tabs (folder/git compare) ────────────────────────────
+   Tabs anchor to the header's bottom edge on a darker strip (bg-panel-2). The
+   active tab is opaque bg-panel — the same color as the column-header rows
+   below — and paints two concave bottom flares via pseudo-elements, bridging
+   into the content area exactly like Chrome's tab-to-toolbar transition. Thin
+   separators sit between inactive tabs and hide next to the active/hovered
+   tab; the close button fades in on hover/active. */
+.pc-tab {
+  position: relative;
+  z-index: 10;
+}
+
+.pc-tab::before,
+.pc-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  pointer-events: none;
+}
+
+/* Separator on the left of every tab except the first, centered in the 8px
+   gap between adjacent tabs and in the 48px header. */
+.pc-tab + .pc-tab::before {
+  left: -4.5px;
+  bottom: 16px;
+  width: 1px;
+  height: 16px;
+  background: var(--color-line);
+  transition: opacity 0.15s;
+}
+
+/* Hide the separator beside the active/hovered tab. The active tab's own
+   ::before is re-purposed as its left flare, so every rule here is scoped to
+   :not(.is-active) — without it, e.g. hovering the tab after the active one
+   would fade out the active tab's flare. */
+.pc-tab:hover:not(.is-active)::before,
+.pc-tab.is-active + .pc-tab::before,
+.pc-tab:not(.is-active):has(+ .pc-tab.is-active)::before,
+.pc-tab:not(.is-active):has(+ .pc-tab:hover)::before {
+  opacity: 0;
+}
+
+/* Active tab: concave bottom flares (radial-gradient fills the square corner
+   outside a transparent quarter-disc), left and right. */
+.pc-tab.is-active::before {
+  left: -10px;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle 10px at 0 0, transparent 9.5px, var(--color-panel) 10px);
+}
+
+.pc-tab.is-active::after {
+  right: -10px;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle 10px at 100% 0, transparent 9.5px, var(--color-panel) 10px);
+}
+
+/* Close button fades in when the tab is hovered or active (Chrome behavior). */
+.pc-tab .pc-tab-close {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.pc-tab:hover .pc-tab-close,
+.pc-tab.is-active .pc-tab-close {
+  opacity: 1;
+}
+
+/* Inactive-tab hover pill: 32px tall, vertically centered in the 48px header
+   (8px top and bottom), behind the tab content. Tab boxes span the full header
+   height and center their content, so text sits at the header's vertical
+   center — the pill's center — in every state. */
+.pc-tab-hover {
+  position: absolute;
+  inset: 8px 0;
+  border-radius: 8px;
+  background: var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.08));
+  opacity: 0;
+  transition: opacity 0.15s;
+  /* Behind the tab's content but inside the tab's own stacking context. */
+  z-index: -1;
+}
+
+.pc-tab:hover .pc-tab-hover {
+  opacity: 1;
+}
+
+.pc-tab.is-active .pc-tab-hover {
+  display: none;
+}
+
+/* Active-tab background: 40px tall (Chrome's 34/40 proportion scaled to the
+   48px header), top edge flush with the hover pill's top edge, bottom edge
+   merging into the content area via the concave flares below. */
+.pc-tab-bg {
+  position: absolute;
+  inset: 8px 0 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--color-panel);
+  z-index: -1;
 }

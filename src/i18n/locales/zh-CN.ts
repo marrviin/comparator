@@ -62,6 +62,7 @@ const zhCN = {
     dropDirOnly: '文件夹对比只能拖入目录,请拖入文件夹。',
     sameContent: '两个目录内容一致',
     waitOtherSide: '等待另一侧目录',
+    treeTab: '目录对比',
     copyToRight: '复制到右侧',
     copyToLeft: '复制到左侧',
     deleteToTrash: '删除到回收站',
@@ -82,6 +83,7 @@ const zhCN = {
     needGitRoot: '需是含 .git 的仓库根目录',
     checkoutToWorktree: '检出到工作区',
     deleteToTrash: '删除到回收站',
+    treeTab: 'Git 对比',
   },
   diff: {
     pickLeftFile: '选择左侧文件',
@@ -133,6 +135,11 @@ const zhCN = {
     unsavedContent: '离开将丢失当前未保存的修改,确定要离开吗?',
     unsavedLeave: '离开',
     unsavedStay: '留下',
+    // 标签页
+    closeTab: '关闭标签页',
+    closeOthers: '关闭其他标签页',
+    closeAllTabs: '关闭所有标签页',
+    dirtyTab: '有未保存的修改',
   },
   settings: {
     general: '通用',
