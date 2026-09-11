@@ -261,6 +261,30 @@ body {
   }
 }
 
+/* Git/Folder comparison toolbar: the ref picker Select's trigger must not overflow its flex container.
+ * The Select uses antd's cssinjs, so we must match or exceed its selector specificity.
+ * overflow:hidden on the selector wrapper clips long branch/commit names. */
+@layer components {
+  .ref-picker-select.ant-select .ant-select-selector {
+    overflow: hidden;
+    max-width: 100%;
+  }
+  .ref-picker-select.ant-select .ant-select-selection-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block !important;
+    max-width: 100%;
+  }
+  .ref-picker-select.ant-select .ant-select-selection-search {
+    max-width: 100%;
+    display: inline-block;
+  }
+  .ref-picker-select.ant-select .ant-select-selection-search-input {
+    max-width: 100%;
+  }
+}
+
 /* The "two-pane diff table" for folder / Git comparison (antd Table tree + virtual scrolling).
  * The goal is to make the Table look like a compact directory tree: remove heavy borders, compress row height, no cell wrapping. */
 .diff-side-table,
@@ -273,10 +297,16 @@ body {
 .diff-side-table .ant-table {
   background: transparent;
 }
-/* Avoid text being selected when the right-click menu pops (row text in folder / Git comparison). */
+/* Avoid text being selected when the right-click menu pops (row text in folder / Git comparison),
+ * and keep the plain arrow cursor over file names instead of the text I-beam. */
 .diff-side-table,
 .diff-side-table * {
   user-select: none;
+  cursor: default;
+}
+/* Exception: the row expand/collapse icon stays a pointer (it's genuinely clickable). */
+.diff-side-table .ant-table-row-expand-icon {
+  cursor: pointer;
 }
 /* Remove the Table's built-in rounded corners (embedded in the two-pane box, needs square flush edges). antd hangs the top
  * rounded corners on .ant-table and the inner <table>, and sets rounded corners separately on the first/last header cells. */

@@ -65,6 +65,9 @@ export interface GitContext extends ShellContext {
   /** The relative path the detail page should open (null on the tree). */
   selectedPath: string | null;
   setSelectedPath: (path: string | null) => void;
+  /** Shared tree-expanded keys, hoisted here so they survive index <-> file navigation. */
+  expandedKeys: string[];
+  setExpandedKeys: (keys: string[]) => void;
   /** Open (or reopen) a repo by directory, optionally restoring two refs. */
   loadRepo: (path: string, wantFrom?: string, wantTo?: string) => Promise<void>;
   /** Change one side's ref and recompute the diff. */
@@ -90,6 +93,9 @@ export function GitCompareLayout() {
   const [to, setToState] = useState<string>(WORKTREE);
   const [entries, setEntries] = useState<DiffEntry[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  // Hoisted so the tree's expansion survives the round-trip into the file detail page
+  // (the index page unmounts there; this layout does not). Cleared on each new diff.
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
 
   // Compute the diff between the two refs and record one history entry (kind=git).
   const runDiff = useCallback(
@@ -103,6 +109,7 @@ export function GitCompareLayout() {
         });
         setEntries(result);
         setSelectedPath(null);
+        setExpandedKeys([]);
         const ctx = info ?? repo;
         const wt = t('worktree');
         pushRecent(f, tgt, 'git', {
@@ -138,6 +145,7 @@ export function GitCompareLayout() {
         setToState(initialTo);
         setEntries([]);
         setSelectedPath(null);
+        setExpandedKeys([]);
         if (initialFrom) await runDiff(info.root, initialFrom, initialTo, info);
       } catch (e) {
         setError(String(e));
@@ -187,12 +195,26 @@ export function GitCompareLayout() {
       entries,
       selectedPath,
       setSelectedPath,
+      expandedKeys,
+      setExpandedKeys,
       loadRepo,
       setFrom,
       setTo,
       refresh,
     }),
-    [shell, repo, from, to, entries, selectedPath, loadRepo, setFrom, setTo, refresh],
+    [
+      shell,
+      repo,
+      from,
+      to,
+      entries,
+      selectedPath,
+      expandedKeys,
+      loadRepo,
+      setFrom,
+      setTo,
+      refresh,
+    ],
   );
 
   return <Outlet context={ctx} />;

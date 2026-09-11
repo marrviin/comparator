@@ -28,6 +28,9 @@ export interface FolderContext extends ShellContext {
   setDirs: (dirs: { left?: string; right?: string }) => Promise<void>;
   /** Remember which file the detail page should open. */
   setSelectedPath: (path: string | null) => void;
+  /** Shared tree-expanded keys, hoisted here so they survive index <-> file navigation. */
+  expandedKeys: string[];
+  setExpandedKeys: (keys: string[]) => void;
   /** Recompute the diff for the two currently-picked directories. */
   refresh: () => Promise<void>;
 }
@@ -59,6 +62,9 @@ export function FolderCompareLayout() {
   const [rightDir, setRightDir] = useState<string | null>(null);
   const [entries, setEntries] = useState<DiffEntry[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  // Hoisted so the tree's expansion survives the round-trip into the file detail page
+  // (the index page unmounts there; this layout does not). Cleared on each new diff.
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
 
   // Compute the diff: allow only one side to exist (pass an empty string for the missing side; the backend marks the other side entirely as added/removed),
   // so importing one side first immediately shows its directory contents without waiting for the other side.
@@ -77,6 +83,7 @@ export function FolderCompareLayout() {
         });
         setEntries(result);
         setSelectedPath(null);
+        setExpandedKeys([]);
       } catch (e) {
         setError(String(e));
       }
@@ -161,9 +168,11 @@ export function FolderCompareLayout() {
       setDir,
       setDirs,
       setSelectedPath,
+      expandedKeys,
+      setExpandedKeys,
       refresh,
     }),
-    [shell, leftDir, rightDir, entries, selectedPath, setDir, setDirs, refresh],
+    [shell, leftDir, rightDir, entries, selectedPath, setDir, setDirs, expandedKeys, refresh],
   );
 
   return <Outlet context={ctx} />;

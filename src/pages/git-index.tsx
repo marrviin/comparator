@@ -36,6 +36,8 @@ export function GitIndexPage() {
     to,
     entries,
     setSelectedPath,
+    expandedKeys,
+    setExpandedKeys,
     loadRepo,
     setFrom,
     setTo,
@@ -44,11 +46,9 @@ export function GitIndexPage() {
   const [hoverSide, setHoverSide] = useState<Side | null>(null);
   const scrollRegister = useScrollSync();
 
-  // Both sides share one expanded set to keep Beyond Compare-style row alignment. Collapsed by default.
-  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
-  useEffect(() => {
-    setExpandedKeys([]);
-  }, [entries]);
+  // Both sides share one expanded set (hoisted into the git layout so the
+  // expansion survives the round-trip into the file detail page). The layout
+  // clears it whenever a new diff is computed.
 
   async function pickRepo() {
     try {
@@ -205,12 +205,12 @@ export function GitIndexPage() {
   const refPicker = (side: Side, value: string | null, onChange: (v: string) => void) => (
     <div
       className={cx(
-        'flex-1 basis-0 flex items-center gap-2 pl-3 pr-2 py-0.5 border-r border-line last:border-r-0',
+        'flex-1 basis-0 min-w-0 flex items-center gap-2 pl-3 pr-2 py-0.5 border-r border-line last:border-r-0 overflow-hidden',
         hoverSide === side && 'bg-accent-bg',
       )}
     >
       <Tooltip title={repo?.root}>
-        <span className="flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap text-muted">
+        <span className="flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap text-muted shrink-0">
           <FolderOpenOutlined />
           {repo?.root.split(/[\\/]/).pop()}
         </span>
@@ -222,16 +222,15 @@ export function GitIndexPage() {
         options={refOptions}
         onChange={onChange}
         placeholder={side === 'left' ? t('fromRef') : t('toRef')}
-        className="flex-1 min-w-0"
+        className="flex-1 min-w-0 ref-picker-select"
         popupMatchSelectWidth={420}
         optionFilterProp="label"
-        getPopupContainer={(node) => node.parentElement ?? document.body}
       />
       <Tooltip title={t('common:refresh')}>
         <Button
           type="text"
           size="small"
-          className="flex-none"
+          className="flex-none shrink-0"
           icon={<ReloadOutlined />}
           disabled={!repo || !from}
           onClick={refresh}

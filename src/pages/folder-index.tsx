@@ -43,17 +43,17 @@ export function FolderIndexPage() {
     setDir,
     setDirs,
     setSelectedPath,
+    expandedKeys,
+    setExpandedKeys,
     refresh,
   } = useFolder();
   const [hoverSide, setHoverSide] = useState<Side | null>(null);
   const scrollRegister = useScrollSync();
 
   // Both sides share one expanded set (Beyond Compare-style linkage): expanding/collapsing a directory on either side
-  // applies to both panes, keeping the row counts identical -> sync scrolling can align strictly. Collapsed by default.
-  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
-  useEffect(() => {
-    setExpandedKeys([]);
-  }, [entries]);
+  // applies to both panes, keeping the row counts identical -> sync scrolling can align strictly.
+  // Hoisted into the folder layout so the expansion survives the round-trip into the file detail
+  // page; the layout clears it whenever a new diff is computed.
 
   async function pickDir(side: Side) {
     setError('');
