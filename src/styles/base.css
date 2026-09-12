@@ -1,0 +1,80 @@
+/* ── Base / reset ──────────────────────────────────────────────────────────────
+ * The project's own minimal reset. Tailwind's preflight is intentionally NOT
+ * imported (it would interfere with antd components' default styles); these rules
+ * on html/body/#root take its place. */
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-fg);
+  background: var(--color-surface);
+}
+
+/* ── macOS vibrancy ────────────────────────────────────────────────────────────
+   See the vibrancy-wash token comment in styles/tokens.css; only the wiring lives here. */
+html.pc-vibrancy {
+  background: transparent;
+}
+.pc-vibrancy-wash {
+  background: var(--pc-vibrancy-wash);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  /* The app is a fixed-viewport shell (h-screen + overflow-hidden), and every page
+   * scrolls inside its own panes. antd Tooltip/popover portals mount into
+   * document.body and are briefly positioned before being measured/adjusted; near
+   * a window edge that pre-adjustment position overflows the viewport and flashes
+   * document-level scrollbars. Lock the root so the document can never scroll. */
+  overflow: hidden;
+}
+
+body {
+  font-feature-settings: 'tnum';
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── OS drag regions (Tauri) ─────────────────────────────────────────────────── */
+
+/* Elements marked as OS drag regions shouldn't select text on drag. */
+[data-tauri-drag-region] {
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+/* Interactive children inside a drag region must stay clickable. */
+[data-tauri-drag-region] button,
+[data-tauri-drag-region] a,
+[data-tauri-drag-region] input,
+[data-tauri-drag-region] .ant-btn,
+[data-tauri-drag-region] .ant-tag,
+[data-tauri-drag-region] [role='button'] {
+  -webkit-app-region: no-drag;
+}
+
+/* ── Custom Tailwind utility ─────────────────────────────────────────────────── */
+
+/* Diagonal hatching for the empty side of an orphan diff line. */
+@utility filler-hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(0, 0, 0, 0.06) 5px,
+    rgba(0, 0, 0, 0.06) 10px
+  );
+}
+
+/* The orphan-line hatch flips to a light weave on dark backgrounds. */
+.pc-dark .filler-hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(255, 255, 255, 0.1) 5px,
+    rgba(255, 255, 255, 0.1) 10px
+  );
+}

@@ -11,7 +11,6 @@ import { invoke } from '@tauri-apps/api/core';
 import { Card, Modal, Input, Empty, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { RetweetOutlined, SearchOutlined } from '@ant-design/icons';
-import { Welcome } from '@ant-design/x';
 import { AppHeader } from '../app-header';
 import { useShell } from '../layout';
 import { materialIconUrlByName, materialIconUrl } from '../material-icons';
@@ -31,7 +30,37 @@ function CardIcon({ name }: { name: string }) {
   );
 }
 
-// The onboarding tour now lives in layout (permanently mounted); the home page only provides anchors via data-tour attributes.
+/**
+ * Home hero: a local replacement for @ant-design/x's <Welcome variant="borderless">
+ * (removed along with the dependency). Clones its exact metrics: 16px gap between
+ * the 58px icon and the text column, 24px/32px semibold title, 14px/22px
+ * description, 8px between them.
+ */
+function WelcomeHero({
+  icon,
+  title,
+  description,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-4 text-[color:var(--ant-color-text,rgba(0,0,0,0.88))]">
+      <img
+        src={icon}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="h-[58px] w-[58px] object-contain select-none"
+      />
+      <div className="flex min-w-0 flex-col gap-2">
+        <div className="text-[24px] leading-8 font-semibold">{title}</div>
+        <div className="text-sm leading-[22px]">{description}</div>
+      </div>
+    </div>
+  );
+}
 
 /** Session cards; titles/descriptions are resolved via i18n at render time (titleKey/descKey). */
 const SESSIONS = [
@@ -87,10 +116,16 @@ function RecentRow({
           draggable={false}
         />
         <span className="flex-1 min-w-0 flex items-center gap-1 text-sm truncate">
-          {entry.kind === 'git' && entry.repo && <span>{basename(entry.repo)}:</span>}
-          <span className="truncate">{entry.leftName}</span>
-          <RetweetOutlined className="text-muted text-[12px] flex-none" />
-          <span className="truncate">{entry.rightName}</span>
+          {/* Git comparisons dedupe per repo and show only the repo's directory name. */}
+          {entry.kind === 'git' ? (
+            <span className="truncate">{basename(entry.repo ?? '')}</span>
+          ) : (
+            <>
+              <span className="truncate">{entry.leftName}</span>
+              <RetweetOutlined className="text-muted text-[12px] flex-none" />
+              <span className="truncate">{entry.rightName}</span>
+            </>
+          )}
         </span>
       </button>
     </Tooltip>
@@ -212,19 +247,11 @@ export function HomePage() {
     <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
       <AppHeader siderCollapsed={siderCollapsed} onExpandSider={onExpandSider} bordered={false} />
       <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-7 p-4 sm:p-8">
-        <div data-tour="home-welcome" className="mb-4">
-          <Welcome
-            title="Pure Compare"
-            icon={<img src={icon} alt="" />}
-            description={t('description')}
-            variant="borderless"
-          />
+        <div className="mb-4">
+          <WelcomeHero icon={icon} title="Pure Compare" description={t('description')} />
         </div>
 
-        <div
-          data-tour="home-cards"
-          className="w-full max-w-[760px] grid gap-4 justify-center grid-cols-[repeat(auto-fit,minmax(140px,1fr))]"
-        >
+        <div className="w-full max-w-[760px] grid gap-4 justify-center grid-cols-[repeat(auto-fit,minmax(140px,1fr))]">
           {SESSIONS.map((s) => (
             <Card
               key={s.key}

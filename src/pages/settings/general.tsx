@@ -5,10 +5,10 @@
  */
 import { Select, Switch } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useSettings, type Settings } from '../../settings';
+import { useSettings, type Settings, type ThemeSetting } from '../../settings';
 import type { LangSetting } from '../../i18n';
 
-/** A single-row switch setting item. */
+/** A single-row switch setting item; desc is optional and only rendered when set. */
 function SwitchRow({
   title,
   desc,
@@ -16,7 +16,7 @@ function SwitchRow({
   onChange,
 }: {
   title: string;
-  desc: string;
+  desc?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
@@ -24,7 +24,7 @@ function SwitchRow({
     <div className="flex items-center justify-between gap-4 rounded-lg bg-surface px-4 py-3">
       <div className="min-w-0">
         <div className="text-[13px] font-medium text-fg">{title}</div>
-        <div className="text-xs text-muted mt-0.5">{desc}</div>
+        {desc && <div className="text-xs text-muted mt-0.5">{desc}</div>}
       </div>
       <Switch checked={checked} onChange={onChange} />
     </div>
@@ -37,16 +37,28 @@ export function GeneralTab() {
   const set = (patch: Partial<Settings>) => update(patch);
 
   return (
-    <div className="px-6 pb-8 flex flex-col gap-4">
-      <div className="sticky top-0 z-10 -mx-6 px-6 flex h-[54px] shrink-0 items-center bg-surface">
-        <h3 className="m-0 text-xl font-semibold">{t('general')}</h3>
+    <div className="flex flex-col gap-4">
+      <div className="text-xs font-semibold text-muted mt-1">{t('appearanceGroup')}</div>
+      <div className="flex items-center justify-between gap-4 rounded-lg bg-surface px-4 py-3">
+        <div className="min-w-0">
+          <div className="text-[13px] font-medium text-fg">{t('theme')}</div>
+        </div>
+        <Select<ThemeSetting>
+          value={settings.theme}
+          onChange={(v) => set({ theme: v })}
+          className="w-[140px]"
+          options={[
+            { value: 'system', label: t('followSystem') },
+            { value: 'light', label: t('themeLight') },
+            { value: 'dark', label: t('themeDark') },
+          ]}
+        />
       </div>
 
-      <div className="text-xs font-semibold text-muted mt-1">{t('languageGroup')}</div>
+      <div className="text-xs font-semibold text-muted mt-2">{t('languageGroup')}</div>
       <div className="flex items-center justify-between gap-4 rounded-lg bg-surface px-4 py-3">
         <div className="min-w-0">
           <div className="text-[13px] font-medium text-fg">{t('interfaceLanguage')}</div>
-          <div className="text-xs text-muted mt-0.5">{t('interfaceLanguageDesc')}</div>
         </div>
         <Select<LangSetting>
           value={settings.language}
@@ -63,7 +75,6 @@ export function GeneralTab() {
       <div className="text-xs font-semibold text-muted mt-2">{t('editSafety')}</div>
       <SwitchRow
         title={t('confirmUnsaved')}
-        desc={t('confirmUnsavedDesc')}
         checked={settings.confirmOnUnsaved}
         onChange={(v) => set({ confirmOnUnsaved: v })}
       />

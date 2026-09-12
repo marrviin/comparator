@@ -1,41 +1,40 @@
 /**
- * Git comparison index page (mirrors the two-column layout of folder compare):
- *   - A minimal top header (back + sidebar expand);
+ * Git comparison tree pane (the fixed tab #0 inside GitComparePage; mirrors
+ * the two-column layout of folder compare):
  *   - Each side has a column header: a ref dropdown (worktree / branch / commit) + refresh;
  *   - Both sides render the same diff records synthesized by git_diff_refs (DiffSideTable),
  *     sharing the expanded set + synced scrolling, with strictly aligned rows;
- *   - Clicking a file node present on a side opens the /git-compare/file detail page;
+ *   - Clicking a file node present on a side opens it as a file tab (see useFileTabs
+ *     on the owning page);
  *   - Supports auto-detecting a repo directory dropped onto the window.
  */
 import { useEffect, useMemo, useState } from 'react';
 import cx from 'classnames';
-import { useNavigate } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { Button, Empty, Select, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { FolderOpenOutlined, LeftOutlined, ReloadOutlined } from '@ant-design/icons';
+import { FolderOpenOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Side } from '../diff-view';
 import { DiffMenuAction, DiffSideTable, buildRecords, folderColumns } from '../diff-table';
-import { AppHeader } from '../app-header';
 import { useScrollSync } from '../scroll-sync';
 import { useGit, WORKTREE, toRev } from './git-compare';
 
-export function GitIndexPage() {
-  const navigate = useNavigate();
+export function GitTreePane({ active }: { active: boolean }) {
   const { t, i18n } = useTranslation(['git', 'common']);
   // Column-header labels under the diff namespace (size/mtime/name); folderColumns needs it + the current locale.
   const { t: td } = useTranslation('diff');
   const {
     setError,
-    siderCollapsed,
-    onExpandSider,
     repo,
     from,
     to,
     entries,
-    setSelectedPath,
+    activePath,
+    openFile,
+    expandedKeys,
+    setExpandedKeys,
     loadRepo,
     setFrom,
     setTo,
@@ -44,11 +43,8 @@ export function GitIndexPage() {
   const [hoverSide, setHoverSide] = useState<Side | null>(null);
   const scrollRegister = useScrollSync();
 
-  // Both sides share one expanded set to keep Beyond Compare-style row alignment. Collapsed by default.
-  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
-  useEffect(() => {
-    setExpandedKeys([]);
-  }, [entries]);
+  // Both sides share one expanded set (hoisted into the page so the expansion
+  // survives tab switches). The page clears it whenever a new diff is computed.
 
   async function pickRepo() {
     try {
@@ -65,7 +61,10 @@ export function GitIndexPage() {
   }
 
   // Native Tauri drag-drop: dropping a directory tries to open it as a Git repo.
+  // Gated on `active` — the pane stays mounted while a file tab is on top, and
+  // an ungated listener would react to drops made while another pane is visible.
   useEffect(() => {
+    if (!active) return;
     let unlisten: (() => void) | undefined;
     let disposed = false;
     getCurrentWebview()
@@ -103,7 +102,7 @@ export function GitIndexPage() {
       disposed = true;
       unlisten?.();
     };
-  }, [loadRepo, setError, t]);
+  }, [active, loadRepo, setError, t]);
 
   // Check out this file from a side's ref into the working tree (git checkout <rev> -- <path>), then recompute the diff.
   // Only available on the ref-snapshot side (the worktree side is already a disk file, so no checkout is needed).
@@ -156,11 +155,6 @@ export function GitIndexPage() {
     [repo, from, to, t],
   );
 
-  function openFile(path: string) {
-    setSelectedPath(path);
-    navigate('/git-compare/file');
-  }
-
   const refOptions = repo
     ? [
         {
@@ -205,33 +199,31 @@ export function GitIndexPage() {
   const refPicker = (side: Side, value: string | null, onChange: (v: string) => void) => (
     <div
       className={cx(
-        'flex-1 basis-0 flex items-center gap-2 pl-3 pr-2 py-0.5 border-r border-line last:border-r-0',
+        'flex-1 basis-0 min-w-0 flex items-center gap-2 pl-3 pr-2 py-0.5 border-r border-line last:border-r-0 overflow-hidden',
         hoverSide === side && 'bg-accent-bg',
       )}
     >
       <Tooltip title={repo?.root}>
-        <span className="flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap text-muted">
+        <span className="flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap text-muted shrink-0">
           <FolderOpenOutlined />
           {repo?.root.split(/[\\/]/).pop()}
         </span>
       </Tooltip>
       <Select
-        size="small"
         showSearch
         value={value ?? undefined}
         options={refOptions}
         onChange={onChange}
         placeholder={side === 'left' ? t('fromRef') : t('toRef')}
-        className="flex-1 min-w-0"
+        className="flex-1 min-w-0 ref-picker-select"
         popupMatchSelectWidth={420}
         optionFilterProp="label"
-        getPopupContainer={(node) => node.parentElement ?? document.body}
       />
       <Tooltip title={t('common:refresh')}>
         <Button
           type="text"
           size="small"
-          className="flex-none"
+          className="flex-none shrink-0"
           icon={<ReloadOutlined />}
           disabled={!repo || !from}
           onClick={refresh}
@@ -261,7 +253,7 @@ export function GitIndexPage() {
             side={side}
             records={records}
             columns={columns}
-            selectedPath={null}
+            selectedPath={activePath}
             onSelect={openFile}
             menuActions={menuActions}
             scrollRegister={scrollRegister}
@@ -275,15 +267,9 @@ export function GitIndexPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <AppHeader
-        siderCollapsed={siderCollapsed}
-        onExpandSider={onExpandSider}
-        left={<Button icon={<LeftOutlined />} onClick={() => navigate('/')} />}
-      />
-
       {!repo ? (
         <div
-          className="flex-1 flex items-center justify-center p-6 cursor-pointer hover:bg-accent-bg transition-[background]"
+          className="box-border flex-1 flex items-center justify-center p-6 cursor-pointer"
           onClick={pickRepo}
           role="button"
         >
@@ -292,7 +278,6 @@ export function GitIndexPage() {
             description={
               <div className="text-[13px] text-muted">
                 <div>{t('clickOrDropRepo')}</div>
-                <div className="mt-1 text-[12px]">{t('needGitRoot')}</div>
               </div>
             }
           />

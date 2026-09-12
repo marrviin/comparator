@@ -29,6 +29,7 @@ import * as monaco from './monaco-core';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { basename } from './diff-view';
+import { useSettings } from './settings';
 import './monaco-env';
 
 export type Side = 'left' | 'right';
@@ -162,15 +163,17 @@ function languageFor(path: string | undefined): string {
 }
 
 /**
- * Define a Monaco theme aligned with the project's visuals (registered only once). The diff
+ * Define the Monaco themes aligned with the project's visuals (registered only once). The diff
  * inserted/removed backgrounds and character highlights use Monaco's built-in tokens; here we align
  * the editor background, line numbers, selection, etc. to the static values of the project's CSS variables.
- * Note: Monaco themes only accept concrete color values, not CSS variables, so we use the fixed values from the project's light theme.
+ * Note: Monaco themes only accept concrete color values, not CSS variables, so we use the fixed
+ * values from the project's light/dark palettes (see styles.css).
  */
-let themeDefined = false;
+let themesDefined = false;
 const THEME_NAME = 'pure-compare-light';
+const THEME_NAME_DARK = 'pure-compare-dark';
 function ensureTheme() {
-  if (themeDefined) return;
+  if (themesDefined) return;
   monaco.editor.defineTheme(THEME_NAME, {
     base: 'vs',
     inherit: true,
@@ -189,7 +192,29 @@ function ensureTheme() {
       'diffEditor.removedLineBackground': '#f33b501a',
     },
   });
-  themeDefined = true;
+  monaco.editor.defineTheme(THEME_NAME_DARK, {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#1d1d1f',
+      'editorGutter.background': '#161617',
+      'editorLineNumber.foreground': '#8a8a8a',
+      'editor.selectionBackground': '#3768fa40',
+      'editor.findMatchBackground': '#f0843366',
+      'editor.findMatchHighlightBackground': '#3768fa40',
+      'diffEditor.insertedTextBackground': '#00b26f33',
+      'diffEditor.removedTextBackground': '#f33b5033',
+      'diffEditor.insertedLineBackground': '#00b26f26',
+      'diffEditor.removedLineBackground': '#f33b5026',
+    },
+  });
+  themesDefined = true;
+}
+
+/** The Monaco theme name for the current app theme. */
+function themeNameFor(isDark: boolean): string {
+  return isDark ? THEME_NAME_DARK : THEME_NAME;
 }
 
 /**
@@ -311,6 +336,9 @@ export function MonacoPanel({
   handleRef,
 }: Props) {
   const { t } = useTranslation('diff');
+  // Effective app theme: selects the matching Monaco theme at creation and live-switches running editors.
+  const { theme } = useSettings();
+  const isDark = theme === 'dark';
   // Keep t in a ref: the copy arrows are imperative DOM (created inside the onDidUpdateDiff closure);
   // the ref ensures the current language's text is read. Written in the effect below (not during render).
   const tRef = useRef(t);
@@ -526,7 +554,7 @@ export function MonacoPanel({
     modelsRef.current = { original, modified };
 
     const editor = monaco.editor.createDiffEditor(host, {
-      theme: THEME_NAME,
+      theme: themeNameFor(isDark),
       originalEditable: !leftReadonly,
       readOnly: rightReadonly,
       // Disable Monaco's built-in editor context menu: this compare tool doesn't need it (cut/copy/paste
@@ -628,6 +656,12 @@ export function MonacoPanel({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live theme switch: Monaco's standalone theme service is a global singleton -- setTheme
+  // re-highlights every editor in place (including the hidden prewarm one), keeping cursor/undo/scroll.
+  useEffect(() => {
+    monaco.editor.setTheme(themeNameFor(isDark));
+  }, [isDark]);
 
   useImperativeHandle(handleRef, () => {
     const editorFor = (side: Side) =>

@@ -1,6 +1,6 @@
 [package]
 name = "pure-compare"
-version = "0.1.0"
+version = "0.2.0"
 description = "A cross-platform file, folder and git diff comparison tool"
 authors = ["marrviin"]
 license = "MIT"
@@ -19,7 +19,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }

@@ -28,10 +28,18 @@ export function SettingsModal({ open, onClose, initialPane = 'general' }: Props)
       onCancel={onClose}
       footer={null}
       destroyOnHidden
+      // antd v6 built-in mask frost: backdrop-blurs the page behind the dim layer.
+      mask={{ blur: true }}
+      // Pure fade instead of antd's zoom: the glass layer lives inside the panel
+      // (.pc-glass-modal ::before) and a transform-animated ancestor makes it
+      // dormant for the animation — the blur pops in afterwards (a flash on
+      // open). Motion CSS lives in styles/antd.css (.pc-modal-fade-*).
+      transitionName="pc-modal-fade"
       width={860}
       centered
       title={null}
-      classNames={{ container: 'settings-modal-content' }}
+      wrapClassName="pc-glass-modal"
+      classNames={{ container: 'overflow-hidden !p-0' }}
       styles={{
         body: { height: '80vh', padding: 0, overflow: 'hidden' },
       }}

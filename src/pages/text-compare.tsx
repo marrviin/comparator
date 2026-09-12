@@ -2,6 +2,10 @@
  * Text (two-file) comparison route. Picks files (or receives dropped/replayed
  * paths through router state) and renders the shared DiffPanel. All text-compare
  * state (files, working copies, hover) lives here now that it is its own route.
+ *
+ * The header uses the same Chrome-style tab strip as folder/git compare, with a
+ * single closable tab standing for the current comparison (its label tracks the
+ * picked file pair, plus the unsaved-changes dot); closing it returns home.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -13,15 +17,19 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
-  LeftOutlined,
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import { DiffPanel, DiffPanelHandle, FileContent, LoadedFile, Side, basename } from '../diff-view';
 import { AppHeader } from '../app-header';
+import { TabBar, type TabBarTab } from '../tab-bar';
 import { useShell } from '../layout';
 import { useFileWatch } from '../use-file-watch';
 import { useUnsavedGuard } from '../use-unsaved-guard';
+import { materialIconUrl, materialIconUrlByName } from '../material-icons';
+
+/** Key of the page's single, unclosable comparison tab. */
+const TEXT_TAB_KEY = '__text__';
 
 /** Which pane an x-coordinate falls into (window midline split). */
 function sideForX(x: number): Side {
@@ -35,9 +43,9 @@ interface TextCompareState {
 }
 
 export function TextComparePage() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation(['diff', 'common']);
+  const navigate = useNavigate();
+  const { t } = useTranslation(['diff', 'common', 'layout']);
   const { setError, pushRecent, siderCollapsed, onExpandSider } = useShell();
 
   const [left, setLeft] = useState<LoadedFile | null>(null);
@@ -96,7 +104,10 @@ export function TextComparePage() {
   }
 
   // Native Tauri drag-drop: HTML5 ondrop cannot expose real file paths, so we
-  // listen to the webview's drag-drop events. Only the hovered side is loaded.
+  // listen to the webview's drag-drop events. One file loads the hovered side;
+  // two or more are split across the panes (drop side takes the first, like the
+  // folder/git pages) — a dropped pair therefore completes a comparison and gets
+  // recorded into the recent list by the history effect below.
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     getCurrentWebview()
@@ -109,16 +120,23 @@ export function TextComparePage() {
           const paths = p.paths.filter(Boolean);
           if (paths.length === 0) return;
           const side = sideForX(p.position.x);
-          const path = paths[0];
-          // When a directory is dropped, prompt to use folder compare instead; only accept files.
+          const other = side === 'left' ? 'right' : 'left';
+          // Directories can't go into a text comparison; only files are accepted.
           void (async () => {
             try {
-              const kind = await invoke<string>('path_kind', { path });
-              if (kind === 'dir') {
+              const kinds = await Promise.all(
+                paths.map((path) => invoke<string>('path_kind', { path })),
+              );
+              const files = paths.filter((_, i) => kinds[i] === 'file');
+              if (files.length === 0) {
                 setError(t('dropFolderUseFolder'));
                 return;
               }
-              await loadFile(side, path);
+              if (files.length >= 2) {
+                await Promise.all([loadFile(side, files[0]), loadFile(other, files[1])]);
+              } else {
+                await loadFile(side, files[0]);
+              }
             } catch (e) {
               setError(String(e));
             }
@@ -224,12 +242,48 @@ export function TextComparePage() {
     rightWatch.dismiss();
   }
 
+  // The single comparison tab: label tracks the picked pair ("a ⇄ b"), falling
+  // back to one side's name and finally the mode label while empty. It is also
+  // the page's last tab: closing it leaves for home (unsaved edits are confirmed
+  // by useUnsavedGuard on the route change).
+  const tabBarTabs = useMemo<TabBarTab[]>(() => {
+    const label =
+      left && right
+        ? `${basename(left.path)} ⇄ ${basename(right.path)}`
+        : left
+          ? basename(left.path)
+          : right
+            ? basename(right.path)
+            : t('layout:textCompare');
+    return [
+      {
+        key: TEXT_TAB_KEY,
+        label,
+        iconUrl: left
+          ? materialIconUrl(basename(left.path))
+          : right
+            ? materialIconUrl(basename(right.path))
+            : materialIconUrlByName('document'),
+        title: left && right ? `${left.path} ⇄ ${right.path}` : (left?.path ?? right?.path),
+        closable: true,
+        dirty: leftDirty || rightDirty,
+      },
+    ];
+  }, [left, right, leftDirty, rightDirty, t]);
+
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <AppHeader
         siderCollapsed={siderCollapsed}
         onExpandSider={onExpandSider}
-        left={<Button icon={<LeftOutlined />} onClick={() => navigate('/')} />}
+        tabs={
+          <TabBar
+            tabs={tabBarTabs}
+            activeKey={TEXT_TAB_KEY}
+            onSelect={() => {}}
+            onClose={() => navigate('/')}
+          />
+        }
         right={
           <Space size="small">
             {canDiff && (

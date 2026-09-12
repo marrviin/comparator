@@ -232,22 +232,40 @@ struct RawDiff {
     right_oid: String,
 }
 
-/// List files that changed between two refs. An empty `to` diffs `from` against
-/// the working tree. Uses `--raw -M` so renames collapse to one entry AND each
-/// row already carries both blob oids — sizes are then resolved with a SINGLE
-/// `git cat-file --batch-check` instead of one `cat-file -s` spawn per file.
+/// List files that changed between two refs. An empty value on either side
+/// stands for the working tree, so the worktree can be picked on EITHER side
+/// (not just the right). Uses `--raw -M` so renames collapse to one entry AND
+/// each row already carries both blob oids — sizes are then resolved with a
+/// SINGLE `git cat-file --batch-check` instead of one `cat-file -s` spawn per
+/// file.
 #[tauri::command]
 pub fn git_diff_refs(repo: String, from: String, to: String) -> Result<Vec<GitFileDiff>, String> {
+    let from = from.trim().to_string();
+    let to = to.trim().to_string();
+
+    // Both sides being the worktree is the worktree compared with itself:
+    // no differences, just return an empty result.
+    if from.is_empty() && to.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // `git diff` only accepts the worktree as the implicit right side, so when
+    // the worktree is picked on the LEFT we diff `<to>` against the worktree
+    // and swap every row's sides afterwards (added <-> removed) to put the
+    // worktree back on the left. With a ref on both sides, pass both so the
+    // comparison is from..to instead of `from` vs the worktree.
+    let swap = from.is_empty();
     let mut args: Vec<&str> = vec!["diff", "--raw", "-M", "--no-color", "--abbrev=40"];
-    args.push(&from);
-    if !to.is_empty() {
+    args.push(if swap { &to } else { &from });
+    if !swap && !to.is_empty() {
         args.push(&to);
     }
     let out = run_git_str(&repo, &args)?;
 
-    // Ref-side commit time is the same for every file; resolve it once. The
-    // working-tree side uses per-file mtime instead (computed below).
-    let left_commit_time = rev_commit_time(&repo, &from);
+    // Display-side refs after the potential swap; the worktree side ("") uses
+    // per-file mtime / filesystem size instead of commit data.
+    let display_from = if swap { String::new() } else { from.clone() };
+    let left_commit_time = rev_commit_time(&repo, &display_from);
     let right_commit_time = rev_commit_time(&repo, &to);
 
     // Pass 1: parse rows and collect the oids we still need sizes for.
@@ -310,6 +328,20 @@ pub fn git_diff_refs(repo: String, from: String, to: String) -> Result<Vec<GitFi
     // Pass 2: one batch call resolves every committed-blob size at once.
     let sizes = batch_blob_sizes(&repo, &wanted).unwrap_or_default();
 
+    // Swap sides when the worktree was the left pick (see comment above).
+    if swap {
+        for r in &mut raws {
+            std::mem::swap(&mut r.left_oid, &mut r.right_oid);
+            r.status = match r.status {
+                "added" => "removed",
+                "removed" => "added",
+                other => other,
+            };
+            r.on_left = r.status != "added";
+            r.on_right = r.status != "removed";
+        }
+    }
+
     let size_for = |oid: &str, is_worktree: bool, path: &str| -> Option<u64> {
         if !oid.is_empty() {
             sizes.get(oid).copied()
@@ -327,7 +359,7 @@ pub fn git_diff_refs(repo: String, from: String, to: String) -> Result<Vec<GitFi
         }
     };
 
-    let from_worktree = from.is_empty();
+    let from_worktree = display_from.is_empty();
     let to_worktree = to.is_empty();
 
     let diffs = raws
@@ -344,7 +376,7 @@ pub fn git_diff_refs(repo: String, from: String, to: String) -> Result<Vec<GitFi
                 None
             },
             left_mtime: if r.on_left {
-                mtime_for(&from, left_commit_time, &r.path)
+                mtime_for(&display_from, left_commit_time, &r.path)
             } else {
                 None
             },
@@ -393,6 +425,9 @@ pub fn git_show(repo: String, rev: String, path: String) -> Result<FileContent, 
     }
 
     let spec = format!("{rev}:{path}");
+    if path.is_empty() {
+        return Err("path cannot be empty".to_string());
+    }
     let bytes = run_git(&repo, &["show", &spec])?;
     let size = bytes.len() as u64;
     // A blob has no filesystem mtime; leave it unset.

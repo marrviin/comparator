@@ -1,40 +1,33 @@
 /**
- * Folder comparison detail page. Opens the file selected in the folder tree as
- * a full side-by-side diff, mirroring the text-compare layout exactly: two-side
- * column headers with save, per-hunk copy arrows, minimap, and per-side footer
- * status bars. Both sides are real files on disk, so dropping a file onto a half
- * replaces that side and copy/save stay enabled.
+ * Folder comparison file pane — one instance per open file tab inside
+ * FolderComparePage. A full side-by-side diff mirroring the text-compare
+ * layout: two-side column headers with save, per-hunk copy arrows, minimap,
+ * and per-side footer status bars. Both sides are real files on disk, so
+ * dropping a file onto a half replaces that side and copy/save stay enabled.
+ *
+ * The pane stays mounted while other tabs are active (only hidden), so its
+ * editor state — scroll, cursor, undo, dirty — survives every tab switch;
+ * the jump/search/reload buttons are hoisted into the page's top header via
+ * reportPanel (mirroring text-compare), and the diff stats live in the footer
+ * (showStatsInFooter).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { Button, Divider, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  LeftOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
 import { DiffPanel, DiffPanelHandle, FileContent, LoadedFile, Side, basename } from '../diff-view';
-import { AppHeader } from '../app-header';
 import { useFolder } from './folder-compare';
 import { useFileWatch } from '../use-file-watch';
-import { useUnsavedGuard } from '../use-unsaved-guard';
 
 /** Which pane an x-coordinate falls into (window midline split). */
 function sideForX(x: number): Side {
   return x < window.innerWidth / 2 ? 'left' : 'right';
 }
 
-export function FolderFilePage() {
-  const navigate = useNavigate();
+export function FolderFilePane({ path, active }: { path: string; active: boolean }) {
   const { t } = useTranslation(['diff', 'common']);
-  const { setError, siderCollapsed, onExpandSider, leftDir, rightDir, entries, selectedPath } =
-    useFolder();
+  const { setError, leftDir, rightDir, entries, reportDirty, reportPanel } = useFolder();
 
   const [left, setLeft] = useState<LoadedFile | null>(null);
   const [right, setRight] = useState<LoadedFile | null>(null);
@@ -42,18 +35,12 @@ export function FolderFilePage() {
   const [rightContent, setRightContent] = useState('');
   const [hoverSide, setHoverSide] = useState<Side | null>(null);
 
-  // No file was selected (e.g. deep-linked or refreshed) — bounce back to the tree.
-  useEffect(() => {
-    if (!selectedPath || !leftDir || !rightDir) navigate('/folder-compare', { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Load one side's file, tolerating absence (added/removed files exist on one
   // side only). Returns the loaded file + its content, or nulls when missing.
-  async function loadSide(path: string): Promise<{ file: LoadedFile | null; content: string }> {
+  async function loadSide(fpath: string): Promise<{ file: LoadedFile | null; content: string }> {
     try {
-      const meta = await invoke<FileContent>('read_text_file', { path });
-      return { file: { path, meta }, content: meta.content };
+      const meta = await invoke<FileContent>('read_text_file', { path: fpath });
+      return { file: { path: fpath, meta }, content: meta.content };
     } catch {
       return { file: null, content: '' };
     }
@@ -86,29 +73,31 @@ export function FolderFilePage() {
     }
   }
 
-  // Load the selected tree entry into both sides on mount / selection change.
+  // Load the tab's file into both sides on mount (dirs only change via a new
+  // diff, which wipes the tabs — so mount-time is the only interesting load).
   useEffect(() => {
-    if (!selectedPath || !leftDir || !rightDir) return;
-    const entry = entries.find((e) => e.path === selectedPath);
+    if (!leftDir || !rightDir) return;
+    const entry = entries.find((e) => e.path === path);
     const leftExists = entry ? entry.status !== 'added' : true;
     const rightExists = entry ? entry.status !== 'removed' : true;
     void (async () => {
       const [l, r] = await Promise.all([
-        leftExists
-          ? loadSide(`${leftDir}/${selectedPath}`)
-          : Promise.resolve({ file: null, content: '' }),
+        leftExists ? loadSide(`${leftDir}/${path}`) : Promise.resolve({ file: null, content: '' }),
         rightExists
-          ? loadSide(`${rightDir}/${selectedPath}`)
+          ? loadSide(`${rightDir}/${path}`)
           : Promise.resolve({ file: null, content: '' }),
       ]);
       setSide('left', l);
       setSide('right', r);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPath, leftDir, rightDir]);
+  }, [path, leftDir, rightDir]);
 
   // Native Tauri drag-drop: dropping a file onto a half replaces that side.
+  // Gated on `active` — every mounted pane registers a listener, and only the
+  // visible one may react to a drop.
   useEffect(() => {
+    if (!active) return;
     let unlisten: (() => void) | undefined;
     getCurrentWebview()
       .onDragDropEvent((event) => {
@@ -129,7 +118,7 @@ export function FolderFilePage() {
         unlisten = fn;
       });
     return () => unlisten?.();
-  }, []);
+  }, [active]);
 
   const baseNotice = useMemo(() => {
     for (const f of [left, right]) {
@@ -144,18 +133,21 @@ export function FolderFilePage() {
   const rightOk = !!right && !right.meta.is_binary && !right.meta.truncated;
   const canDiff = (leftOk || rightOk) && !(left && !leftOk) && !(right && !rightOk);
 
-  const [stats, setStats] = useState({ added: 0, removed: 0 });
-  const diffPanelRef = useRef<DiffPanelHandle>(null);
-
   const leftDirty = !!left && leftContent !== left.meta.content;
   const rightDirty = !!right && rightContent !== right.meta.content;
 
-  useUnsavedGuard(leftDirty || rightDirty);
+  // Lift the pane's dirty state to the page so tab close/leave guards can confirm.
+  useEffect(() => {
+    reportDirty(path, leftDirty || rightDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, leftDirty, rightDirty]);
 
   const reloadSide = (side: Side) => {
     const file = side === 'left' ? left : right;
     if (file) void loadSide(file.path).then((res) => setSide(side, res));
   };
+  // Watch stays armed even while the pane is hidden: a clean background tab
+  // reloads silently; a dirty one keeps the notice for when the user returns.
   const leftWatch = useFileWatch({
     path: leftOk ? (left?.path ?? null) : null,
     dirty: leftDirty,
@@ -167,7 +159,7 @@ export function FolderFilePage() {
     onReload: () => reloadSide('right'),
   });
 
-  // Reload both files and clear the external-change notice — reused by the top header refresh button and DiffPanel.
+  // Reload both files and clear the external-change notice — reused by the column-header reload button and DiffPanel.
   function reloadAll() {
     reloadSide('left');
     reloadSide('right');
@@ -180,6 +172,25 @@ export function FolderFilePage() {
     : rightWatch.externallyChanged
       ? t('rightChangedExternally')
       : baseNotice;
+
+  // Hoist the jump/search/reload actions into the page header (mirroring
+  // text-compare's header layout). Re-reported every render to keep the
+  // closures and gating flags fresh; the page re-renders only on flag changes.
+  // Unregistration is a separate mount-scoped effect: a cleanup on the no-deps
+  // effect would fire on every re-render and cause a report→render loop.
+  const panelRef = useRef<DiffPanelHandle>(null);
+  useEffect(() => {
+    reportPanel(path, {
+      goPrev: () => panelRef.current?.goPrev(),
+      goNext: () => panelRef.current?.goNext(),
+      toggleSearch: () => panelRef.current?.toggleSearch(),
+      reload: reloadAll,
+      canDiff,
+      hasFile: !!(left || right),
+    });
+  });
+  // Panes are keyed by path, so path is stable for a pane's whole lifetime.
+  useEffect(() => () => reportPanel(path, null), [path, reportPanel]);
 
   function onChange(side: Side, text: string) {
     if (side === 'left') setLeftContent(text);
@@ -211,73 +222,25 @@ export function FolderFilePage() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <AppHeader
-        siderCollapsed={siderCollapsed}
-        onExpandSider={onExpandSider}
-        left={<Button icon={<LeftOutlined />} onClick={() => navigate('/folder-compare')} />}
-        right={
-          <Space size="small">
-            {canDiff && (
-              <>
-                <Tooltip title={t('common:prevDiff')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<ArrowUpOutlined />}
-                    onClick={() => diffPanelRef.current?.goPrev()}
-                  />
-                </Tooltip>
-                <Tooltip title={t('common:nextDiff')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<ArrowDownOutlined />}
-                    onClick={() => diffPanelRef.current?.goNext()}
-                  />
-                </Tooltip>
-                <Tooltip title={t('common:findReplace')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<SearchOutlined />}
-                    onClick={() => diffPanelRef.current?.toggleSearch()}
-                  />
-                </Tooltip>
-                <Divider vertical className="mx-0.5" />
-              </>
-            )}
-            {(left || right) && (
-              <Tooltip title={t('common:refresh')}>
-                <Button type="text" size="small" icon={<ReloadOutlined />} onClick={reloadAll} />
-              </Tooltip>
-            )}
-            <Tag color="error">-{stats.removed}</Tag>
-            <Tag color="success">+{stats.added}</Tag>
-          </Space>
-        }
-      />
-
-      <DiffPanel
-        ref={diffPanelRef}
-        showGlobalActions={false}
-        left={left}
-        right={right}
-        leftContent={leftContent}
-        rightContent={rightContent}
-        notice={notice}
-        canDiff={canDiff}
-        hoverSide={hoverSide}
-        onPick={pickFile}
-        onChange={onChange}
-        onStats={setStats}
-        onSave={saveFile}
-        onReload={reloadAll}
-        showReload={false}
-        leftDirty={leftDirty}
-        rightDirty={rightDirty}
-        emptyMode="pick"
-      />
-    </div>
+    <DiffPanel
+      ref={panelRef}
+      left={left}
+      right={right}
+      leftContent={leftContent}
+      rightContent={rightContent}
+      notice={notice}
+      canDiff={canDiff}
+      hoverSide={hoverSide}
+      onPick={pickFile}
+      onChange={onChange}
+      onSave={saveFile}
+      onReload={reloadAll}
+      showGlobalActions={false}
+      showReload={false}
+      showStatsInFooter
+      leftDirty={leftDirty}
+      rightDirty={rightDirty}
+      emptyMode="pick"
+    />
   );
 }

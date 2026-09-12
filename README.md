@@ -35,14 +35,18 @@ A lightweight, native desktop alternative to Beyond Compare and Meld — free an
 ## Features
 
 - **Text compare** — drag in or pick two files and diff them line by line, with two-way editing and save.
-- **Folder compare** — recursively compare two directories, listing added / modified / deleted / renamed entries; open any file to enter a line-by-line diff.
-- **Git compare** — compare any two refs (including the working tree), browse the changed-file list and per-file diff, and check out individual files.
+- **Folder compare** — recursively compare two directories, listing added / modified / deleted entries; open any file to enter a line-by-line diff.
+- **Git compare** — compare any two refs (including the working tree), browse the changed-file list (rename detection included) and per-file diff, and check out individual files.
 - **Smart encoding** — automatic detection (UTF-8/16 BOM, GBK, etc.), binary detection, and a truncation guard for very large files.
 - **Live & safe** — external file-change watching, unsaved-changes guard, ignore-rule settings, and colored file icons (Material Icon Theme).
 
 ## Screenshots
 
-_Coming soon — more screenshots and a demo GIF._
+| Text compare | Folder compare |
+| --- | --- |
+| ![Text compare](./docs/images/text-en.png) | ![Folder compare](./docs/images/folder-tree-en.png) |
+| **Side-by-side file diff** | **Git compare** |
+| ![Side-by-side file diff](./docs/images/folder-file-en.png) | ![Git compare](./docs/images/git-tree-en.png) |
 
 ## Download
 

@@ -104,7 +104,7 @@ export function folderColumns(t: TFunction<'diff'>, locale: string): DiffColumn[
       title: t('mtime'),
       width: 208,
       align: 'right',
-      cellClassName: 'mtime-cell',
+      cellClassName: '[direction:rtl] [unicode-bidi:plaintext]',
       render: (node, side) => fmtMtime(side === 'left' ? node.leftMtime : node.rightMtime, locale),
     },
   ];

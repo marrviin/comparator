@@ -1,9 +1,24 @@
 <!doctype html>
-<html lang="en">
+<!-- class="pc" is antd's cssVar scope (ConfigProvider theme.cssVar.key): the generated
+     --ant-* variables hang on `.pc`, and antd only adds that class to its own component
+     roots. Putting it on <html> lets our Tailwind bridge tokens (var(--ant-*)) resolve
+     everywhere, so neutral surfaces follow light/dark. -->
+<html lang="en" class="pc">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pure Compare</title>
+    <script>
+      // Pre-paint the theme before React mounts (settings load asynchronously from the Tauri
+      // store): mirror of the raw theme setting written by settings.ts. 'dark' forces dark,
+      // 'system'/missing follows the OS preference, 'light' does nothing.
+      try {
+        var t = localStorage.getItem('pc-theme');
+        if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('pc-dark');
+        }
+      } catch (e) {}
+    </script>
   </head>
 
   <body>

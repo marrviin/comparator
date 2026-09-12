@@ -1,50 +1,35 @@
 /**
- * Git comparison detail page. Opens the file selected in the git tree as a full
- * side-by-side diff. Each side loads its content via `git_show` at that side's
- * ref; ref snapshots are read-only, while the working-tree side (if either ref
- * is WORKTREE) is a real disk file that can be edited, saved, and watched.
+ * Git comparison file pane — one instance per open file tab inside
+ * GitComparePage. A full side-by-side diff: each side loads its content via
+ * `git_show` at that side's ref; ref snapshots are read-only, while the
+ * working-tree side (if either ref is WORKTREE) is a real disk file that can
+ * be edited, saved, and watched.
  *
- * Because this is now a real route (not internal state), useUnsavedGuard blocks
- * the back navigation when the working-tree side has unsaved edits.
+ * The pane stays mounted while other tabs are active (only hidden), so its
+ * editor state survives every tab switch; the jump/search/reload buttons are
+ * hoisted into the page's top header via reportPanel (mirroring text-compare),
+ * and the diff stats live in the footer (showStatsInFooter). Dirty state is
+ * lifted to the page for the tab close/leave guards.
  */
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
-import { Button, Divider, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
-import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  LeftOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
 import { DiffPanel, DiffPanelHandle, FileContent, LoadedFile, Side } from '../diff-view';
-import { AppHeader } from '../app-header';
 import { useFileWatch } from '../use-file-watch';
-import { useUnsavedGuard } from '../use-unsaved-guard';
 import { useGit, WORKTREE, toRev } from './git-compare';
 
-export function GitFilePage() {
-  const navigate = useNavigate();
+export function GitFilePane({ path }: { path: string }) {
   const { t } = useTranslation(['diff', 'common', 'git']);
-  const { setError, siderCollapsed, onExpandSider, repo, from, to, entries, selectedPath } =
-    useGit();
+  const { setError, repo, from, to, entries, reportDirty, reportPanel } = useGit();
 
   const [left, setLeft] = useState<LoadedFile | null>(null);
   const [right, setRight] = useState<LoadedFile | null>(null);
   const [leftContent, setLeftContent] = useState('');
   const [rightContent, setRightContent] = useState('');
 
-  // No file / repo (deep-linked or refreshed) — bounce back to the tree.
-  useEffect(() => {
-    if (!selectedPath || !repo || !from) navigate('/git-compare', { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   async function loadSide(
     rev: string,
-    path: string,
+    fpath: string,
     exists: boolean,
   ): Promise<{ file: LoadedFile | null; content: string }> {
     if (!exists || !repo) return { file: null, content: '' };
@@ -53,10 +38,10 @@ export function GitFilePage() {
       const meta = await invoke<FileContent>('git_show', {
         repo: repo.root,
         rev: toRev(rev),
-        path,
+        path: fpath,
       });
       return {
-        file: { path: `${label}:${path}`, meta, label: `${label} · ${path}` },
+        file: { path: `${label}:${fpath}`, meta, label: `${label} · ${fpath}` },
         content: meta.content,
       };
     } catch {
@@ -64,15 +49,16 @@ export function GitFilePage() {
     }
   }
 
-  // Load both sides' content for the selected file (on mount / when the selection changes).
-  async function openFile(path: string) {
+  // Load both sides' content for the tab's file (on mount — refs only change
+  // via a new diff, which wipes the tabs).
+  async function openFile(fpath: string) {
     if (!repo || !from) return;
-    const entry = entries.find((e) => e.path === path);
+    const entry = entries.find((e) => e.path === fpath);
     const leftExists = entry ? entry.status !== 'added' : true;
     const rightExists = entry ? entry.status !== 'removed' : true;
     const [l, r] = await Promise.all([
-      loadSide(from, path, leftExists),
-      loadSide(to, path, rightExists),
+      loadSide(from, fpath, leftExists),
+      loadSide(to, fpath, rightExists),
     ]);
     setLeft(l.file);
     setRight(r.file);
@@ -81,34 +67,35 @@ export function GitFilePage() {
   }
 
   useEffect(() => {
-    if (selectedPath && repo && from) void openFile(selectedPath);
+    if (repo && from) void openFile(path);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPath]);
+  }, [path]);
 
   const canDiff =
     !!(left || right) &&
     !(left?.meta.is_binary || right?.meta.is_binary) &&
     !(left?.meta.truncated || right?.meta.truncated);
 
-  const [stats, setStats] = useState({ added: 0, removed: 0 });
-  const diffPanelRef = useRef<DiffPanelHandle>(null);
-
   const leftReadonly = from !== WORKTREE;
   const rightReadonly = to !== WORKTREE;
   const leftDirty = !!left && !leftReadonly && leftContent !== left.meta.content;
   const rightDirty = !!right && !rightReadonly && rightContent !== right.meta.content;
 
-  // Intercept route navigation when there are unsaved changes (controlled by the setting) -- this only truly fires after the real-router refactor.
-  useUnsavedGuard(leftDirty || rightDirty);
+  // Lift the pane's dirty state to the page so tab close/leave guards can confirm.
+  useEffect(() => {
+    reportDirty(path, leftDirty || rightDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, leftDirty, rightDirty]);
 
   // Only the working-tree side is a real file on disk and can be watched for external changes; the ref-snapshot side isn't watched.
+  // Stays armed while the pane is hidden: a clean background tab reloads silently; a dirty one keeps the notice.
   const worktreeSide: Side | null = from === WORKTREE ? 'left' : to === WORKTREE ? 'right' : null;
   const worktreeDirty =
     worktreeSide === 'left' ? leftDirty : worktreeSide === 'right' ? rightDirty : false;
   const watch = useFileWatch({
-    path: selectedPath && worktreeSide ? `${repo?.root ?? ''}/${selectedPath}` : null,
+    path: path && worktreeSide ? `${repo?.root ?? ''}/${path}` : null,
     dirty: worktreeDirty,
-    onReload: () => selectedPath && void openFile(selectedPath),
+    onReload: () => void openFile(path),
   });
 
   const notice = watch.externallyChanged
@@ -126,95 +113,66 @@ export function GitFilePage() {
 
   // Only the working-tree side is a real file that can be written back.
   async function saveFile(side: Side) {
-    if (!repo || !selectedPath) return;
+    if (!repo) return;
     const rev = side === 'left' ? from : to;
     if (rev !== WORKTREE) return; // ref snapshots are read-only
     const content = side === 'left' ? leftContent : rightContent;
-    const path = `${repo.root}/${selectedPath}`;
+    const fullPath = `${repo.root}/${path}`;
     setError('');
     try {
-      await invoke<number | null>('write_text_file', { path, content });
+      await invoke<number | null>('write_text_file', { path: fullPath, content });
       // After saving, reload this side to refresh meta.content and clear the dirty flag.
-      if (selectedPath) void openFile(selectedPath);
+      void openFile(path);
     } catch (e) {
       setError(String(e));
     }
   }
 
-  // Reload the selected file and clear the external-change prompt -- reused by the top header's refresh button and DiffPanel.
+  // Reload the tab's file and clear the external-change prompt -- reused by the page-header reload button.
   function reloadAll() {
-    if (selectedPath) void openFile(selectedPath);
+    void openFile(path);
     watch.dismiss();
   }
 
-  return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <AppHeader
-        siderCollapsed={siderCollapsed}
-        onExpandSider={onExpandSider}
-        left={<Button icon={<LeftOutlined />} onClick={() => navigate('/git-compare')} />}
-        right={
-          <Space size="small">
-            {canDiff && (
-              <>
-                <Tooltip title={t('common:prevDiff')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<ArrowUpOutlined />}
-                    onClick={() => diffPanelRef.current?.goPrev()}
-                  />
-                </Tooltip>
-                <Tooltip title={t('common:nextDiff')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<ArrowDownOutlined />}
-                    onClick={() => diffPanelRef.current?.goNext()}
-                  />
-                </Tooltip>
-                <Tooltip title={t('common:findReplace')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<SearchOutlined />}
-                    onClick={() => diffPanelRef.current?.toggleSearch()}
-                  />
-                </Tooltip>
-                <Divider vertical className="mx-0.5" />
-              </>
-            )}
-            {(left || right) && (
-              <Tooltip title={t('common:refresh')}>
-                <Button type="text" size="small" icon={<ReloadOutlined />} onClick={reloadAll} />
-              </Tooltip>
-            )}
-            <Tag color="error">-{stats.removed}</Tag>
-            <Tag color="success">+{stats.added}</Tag>
-          </Space>
-        }
-      />
+  // Hoist the jump/search/reload actions into the page header (mirroring
+  // text-compare's header layout). Re-reported every render to keep the
+  // closures and gating flags fresh; the page re-renders only on flag changes.
+  // Unregistration is a separate mount-scoped effect: a cleanup on the no-deps
+  // effect would fire on every re-render and cause a report→render loop.
+  const panelRef = useRef<DiffPanelHandle>(null);
+  useEffect(() => {
+    reportPanel(path, {
+      goPrev: () => panelRef.current?.goPrev(),
+      goNext: () => panelRef.current?.goNext(),
+      toggleSearch: () => panelRef.current?.toggleSearch(),
+      reload: reloadAll,
+      canDiff,
+      hasFile: !!(left || right),
+    });
+  });
+  // Panes are keyed by path, so path is stable for a pane's whole lifetime.
+  useEffect(() => () => reportPanel(path, null), [path, reportPanel]);
 
-      <DiffPanel
-        ref={diffPanelRef}
-        showGlobalActions={false}
-        left={left}
-        right={right}
-        leftContent={leftContent}
-        rightContent={rightContent}
-        notice={notice}
-        canDiff={canDiff}
-        onChange={onChange}
-        onStats={setStats}
-        onSave={saveFile}
-        onReload={reloadAll}
-        showReload={false}
-        leftDirty={leftDirty}
-        rightDirty={rightDirty}
-        leftReadonly={leftReadonly}
-        rightReadonly={rightReadonly}
-        emptyMode="hint"
-      />
-    </div>
+  return (
+    <DiffPanel
+      ref={panelRef}
+      left={left}
+      right={right}
+      leftContent={leftContent}
+      rightContent={rightContent}
+      notice={notice}
+      canDiff={canDiff}
+      onChange={onChange}
+      onSave={saveFile}
+      onReload={reloadAll}
+      showGlobalActions={false}
+      showReload={false}
+      showStatsInFooter
+      leftDirty={leftDirty}
+      rightDirty={rightDirty}
+      leftReadonly={leftReadonly}
+      rightReadonly={rightReadonly}
+      emptyMode="hint"
+    />
   );
 }

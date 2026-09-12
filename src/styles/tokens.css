@@ -1,0 +1,96 @@
+/* ── Design tokens ─────────────────────────────────────────────────────────────
+ * All design tokens are registered uniformly into @theme, and Tailwind generates the
+ * corresponding atomic classes (palette -> `bg-*` / `text-*` / `border-*`, fonts -> `font-mono`).
+ * JSX always uses semantic atomic classes (like `bg-panel`, `text-muted`, `border-line`, `bg-add-bg`),
+ * no longer hand-writing `[var(--token)]`.
+ * Two kinds of tokens:
+ * - Diff colors: fixed red/green diff palette (static hex);
+ * - Chrome/neutral surfaces: bridge antd cssVar (see app.tsx's ConfigProvider); the values themselves are
+ *   `var(--ant-*)`, lazily resolved by the antd theme at the "point of use", so the whole app follows theme changes. */
+
+/* Dark mode keys off the .pc-dark class app.tsx toggles on <html> (same trigger
+ * as the token overrides in :root.pc-dark), not prefers-color-scheme. */
+@custom-variant dark (&:where(.pc-dark, .pc-dark *));
+
+@theme {
+  /* ── Diff colors (fixed red/green) ────────────────────────────── */
+  --color-remove-bg: #ffe3e3;
+  --color-remove-ln-bg: #ffd2d2;
+  --color-remove-strong: #ff9c9c;
+  --color-remove-fg: #c0392b;
+
+  --color-add-bg: #e2f6e4;
+  --color-add-ln-bg: #cdeecf;
+  --color-add-strong: #9be2a2;
+  --color-add-fg: #1a7f37;
+
+  /* ── Chrome / neutral surfaces (bridging antd theme tokens) ───────────────
+     Names avoid "stuttering" with Tailwind atomic-class prefixes:
+     surface (container base `bg-surface`), line (border `border-line`), fg (body text `text-fg`). */
+  --color-surface: var(--ant-color-bg-container, #fafafa);
+  --color-panel: var(--ant-color-bg-layout, #f2f2f2);
+  /* The header tab strip needs a solid, clearly-darker gray in light mode — antd's
+   * default fill-tertiary (4% translucent black) blends to ~#f0f0f0 over the surface,
+   * which is nearly indistinguishable from --color-panel (#f2f2f2) and kills the
+   * Chrome-style strip effect. So light pins the designed solid value here, and the
+   * :root.pc-dark block below re-bridges it to the antd token for dark mode. */
+  --color-panel-2: #e9e9ec;
+  --color-line: var(--ant-color-border, #e8e8ea);
+  --color-split: var(--ant-color-split, rgba(0, 0, 0, 0.06));
+  --color-fg: var(--ant-color-text, #1f1f1f);
+  --color-muted: var(--ant-color-text-tertiary, #8a8a8a);
+  --color-warning: var(--ant-color-warning, #f08433);
+  --color-accent: var(--ant-color-primary, #3768fa);
+  --color-accent-hover: var(--ant-color-primary-hover, #5a86ff);
+  --color-accent-bg: var(--ant-color-primary-bg, #eaf0ff);
+  --color-hover: var(--ant-control-item-bg-hover, rgba(0, 0, 0, 0.04));
+  /* Directory-tree zebra stripe background: a very faint fill that follows the theme, adapting to light/dark. */
+  --color-zebra: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
+
+  /* ── Diff body type ──────────────────────────────────────────────────────────
+     Platform monospace stack via the `font-mono` utility. */
+  --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ── macOS vibrancy wash ─────────────────────────────────────────────────────
+     The native window carries an NSVisualEffectView (tauri.conf.json windowEffects,
+     material "sidebar"); html goes transparent so the system blur shows through,
+     and the shell root (.pc-vibrancy-wash) paints this theme-tinted translucent
+     wash on top of it so text contrast holds even when the in-app theme differs
+     from the system appearance. Gated by html.pc-vibrancy (set in app.tsx via
+     src/platform.ts isMac); other platforms keep the opaque bg-panel shell.
+     Tuning: raise/lower the alpha to make the wallpaper bleed more/less subtle. */
+  --pc-vibrancy-wash: rgba(255, 255, 255, 0.3);
+
+  /* ── Frosted-glass dialog (settings modal) ──────────────────────────────────
+     Native vibrancy is window-level only — a DOM overlay can't carry the
+     NSVisualEffectView material. Dialogs get the in-page equivalent instead:
+     the modal panel is translucent and backdrop-blurs the app content behind
+     it (styles/antd.css .pc-glass-modal). Inner surfaces of the shell stay
+     clear so the glass reads through. */
+  --pc-glass-bg: rgba(250, 250, 250, 0.9);
+}
+
+/* ── Dark theme token overrides ────────────────────────────────────────────────
+   Tokens bridged to var(--ant-*) above follow antd's dark algorithm automatically;
+   only the fixed-color diff palette, panel-2 and the vibrancy wash need explicit
+   dark values, hung on .pc-dark (toggled on <html> by app.tsx; pre-painted by the
+   inline script in index.html). */
+:root.pc-dark {
+  --pc-vibrancy-wash: rgba(24, 24, 26, 0.9);
+  --pc-glass-bg: rgba(29, 29, 31, 0.78);
+  --color-panel-2: var(--ant-color-fill-tertiary, #2b2b2d);
+  --color-remove-bg: #2f2024;
+  --color-remove-ln-bg: #3b2529;
+  --color-remove-strong: #5c3238;
+  --color-remove-fg: #ff8c8c;
+
+  --color-add-bg: #1c2e23;
+  --color-add-ln-bg: #233b2b;
+  --color-add-strong: #2e5a3a;
+  --color-add-fg: #7ce0a0;
+}
+
+/* Native chrome (scrollbars, form controls) follows the theme. */
+.pc-dark {
+  color-scheme: dark;
+}
