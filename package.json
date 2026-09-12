@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "predev": "node scripts/sync-material-icons.mjs",
+    "predev": "node scripts/kill-port.mjs && node scripts/sync-material-icons.mjs",
     "prebuild": "node scripts/sync-material-icons.mjs",
     "postinstall": "node scripts/sync-material-icons.mjs",
     "preview": "vite preview",
