@@ -26,6 +26,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import cx from 'classnames';
+import { Button, Divider, Space, Tooltip } from 'antd';
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import { DiffEntry } from '../diff-tree';
 import { Side, basename } from '../diff-view';
 import { ShellContext, useShell } from '../layout';
@@ -34,6 +41,7 @@ import { AppHeader } from '../app-header';
 import { TabBar, type TabBarTab } from '../tab-bar';
 import { TREE_TAB_KEY, useFileTabs } from '../use-file-tabs';
 import { useUnsavedGuard } from '../use-unsaved-guard';
+import { usePaneActions, type PaneActions } from '../use-pane-actions';
 import { materialIconUrl, materialIconUrlByName } from '../material-icons';
 import { FolderTreePane } from './folder-index';
 import { FolderFilePane } from './folder-file';
@@ -49,6 +57,8 @@ export interface FolderContext extends ShellContext {
   openFile: (path: string) => void;
   /** Report a pane's dirty state so tab close/leave guards can confirm. */
   reportDirty: (path: string, dirty: boolean) => void;
+  /** Report a pane's header actions (jump/search/reload) so the page header can host them for the active tab. */
+  reportPanel: (path: string, actions: PaneActions | null) => void;
   /** Set one side's directory and (once both are set) recompute the diff. */
   setDir: (side: Side, path: string) => Promise<void>;
   /** Set both sides at once (dropping two folders together) and recompute. */
@@ -99,6 +109,10 @@ export function FolderComparePage() {
   const reportDirty = useCallback((path: string, dirty: boolean) => {
     setDirtyMap((prev) => (prev[path] === dirty ? prev : { ...prev, [path]: dirty }));
   }, []);
+
+  // Per-tab header actions, reported by each FolderFilePane; the header buttons
+  // below act on the active tab's pane (matching text-compare's header layout).
+  const { reportPanel, getPanel } = usePaneActions();
 
   const tabsApi = useFileTabs({
     basePath: '/folder-compare',
@@ -249,6 +263,10 @@ export function FolderComparePage() {
     [closeTab, navigate],
   );
 
+  // The active pane's hoisted actions (null on the tree tab): gating flags come
+  // from the pane's report, so header buttons appear/disappear in sync.
+  const activeActions = getPanel(activePath);
+
   const ctx = useMemo<FolderContext>(
     () => ({
       ...shell,
@@ -258,6 +276,7 @@ export function FolderComparePage() {
       activePath,
       openFile,
       reportDirty,
+      reportPanel,
       setDir,
       setDirs,
       expandedKeys,
@@ -272,6 +291,7 @@ export function FolderComparePage() {
       activePath,
       openFile,
       reportDirty,
+      reportPanel,
       setDir,
       setDirs,
       expandedKeys,
@@ -294,6 +314,49 @@ export function FolderComparePage() {
               onCloseOthers={closeOthers}
               onCloseAll={closeAll}
             />
+          }
+          right={
+            <Space size="small">
+              {activeActions?.canDiff && (
+                <>
+                  <Tooltip title={t('common:prevDiff')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ArrowUpOutlined />}
+                      onClick={() => activeActions.goPrev()}
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('common:nextDiff')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ArrowDownOutlined />}
+                      onClick={() => activeActions.goNext()}
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('common:findReplace')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<SearchOutlined />}
+                      onClick={() => activeActions.toggleSearch()}
+                    />
+                  </Tooltip>
+                  <Divider vertical className="mx-0.5" />
+                </>
+              )}
+              {activeActions?.hasFile && (
+                <Tooltip title={t('common:refresh')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ReloadOutlined />}
+                    onClick={() => activeActions.reload()}
+                  />
+                </Tooltip>
+              )}
+            </Space>
           }
         />
 

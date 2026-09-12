@@ -7,16 +7,16 @@
  *
  * The pane stays mounted while other tabs are active (only hidden), so its
  * editor state — scroll, cursor, undo, dirty — survives every tab switch;
- * the jump/search/reload buttons live in DiffPanel's own column headers
- * (showGlobalActions / showReload) and the diff stats in the footer
- * (showStatsInFooter) instead of a page-level toolbar.
+ * the jump/search/reload buttons are hoisted into the page's top header via
+ * reportPanel (mirroring text-compare), and the diff stats live in the footer
+ * (showStatsInFooter).
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useTranslation } from 'react-i18next';
-import { DiffPanel, FileContent, LoadedFile, Side, basename } from '../diff-view';
+import { DiffPanel, DiffPanelHandle, FileContent, LoadedFile, Side, basename } from '../diff-view';
 import { useFolder } from './folder-compare';
 import { useFileWatch } from '../use-file-watch';
 
@@ -27,7 +27,7 @@ function sideForX(x: number): Side {
 
 export function FolderFilePane({ path, active }: { path: string; active: boolean }) {
   const { t } = useTranslation(['diff', 'common']);
-  const { setError, leftDir, rightDir, entries, reportDirty } = useFolder();
+  const { setError, leftDir, rightDir, entries, reportDirty, reportPanel } = useFolder();
 
   const [left, setLeft] = useState<LoadedFile | null>(null);
   const [right, setRight] = useState<LoadedFile | null>(null);
@@ -173,6 +173,25 @@ export function FolderFilePane({ path, active }: { path: string; active: boolean
       ? t('rightChangedExternally')
       : baseNotice;
 
+  // Hoist the jump/search/reload actions into the page header (mirroring
+  // text-compare's header layout). Re-reported every render to keep the
+  // closures and gating flags fresh; the page re-renders only on flag changes.
+  // Unregistration is a separate mount-scoped effect: a cleanup on the no-deps
+  // effect would fire on every re-render and cause a report→render loop.
+  const panelRef = useRef<DiffPanelHandle>(null);
+  useEffect(() => {
+    reportPanel(path, {
+      goPrev: () => panelRef.current?.goPrev(),
+      goNext: () => panelRef.current?.goNext(),
+      toggleSearch: () => panelRef.current?.toggleSearch(),
+      reload: reloadAll,
+      canDiff,
+      hasFile: !!(left || right),
+    });
+  });
+  // Panes are keyed by path, so path is stable for a pane's whole lifetime.
+  useEffect(() => () => reportPanel(path, null), [path, reportPanel]);
+
   function onChange(side: Side, text: string) {
     if (side === 'left') setLeftContent(text);
     else setRightContent(text);
@@ -204,6 +223,7 @@ export function FolderFilePane({ path, active }: { path: string; active: boolean
 
   return (
     <DiffPanel
+      ref={panelRef}
       left={left}
       right={right}
       leftContent={leftContent}
@@ -215,6 +235,8 @@ export function FolderFilePane({ path, active }: { path: string; active: boolean
       onChange={onChange}
       onSave={saveFile}
       onReload={reloadAll}
+      showGlobalActions={false}
+      showReload={false}
       showStatsInFooter
       leftDirty={leftDirty}
       rightDirty={rightDirty}

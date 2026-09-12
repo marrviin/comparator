@@ -6,21 +6,21 @@
  * be edited, saved, and watched.
  *
  * The pane stays mounted while other tabs are active (only hidden), so its
- * editor state survives every tab switch; the jump/search/reload buttons live
- * in DiffPanel's own column headers (showGlobalActions / showReload) and the
- * diff stats in the footer (showStatsInFooter) instead of a page-level
- * toolbar. Dirty state is lifted to the page for the tab close/leave guards.
+ * editor state survives every tab switch; the jump/search/reload buttons are
+ * hoisted into the page's top header via reportPanel (mirroring text-compare),
+ * and the diff stats live in the footer (showStatsInFooter). Dirty state is
+ * lifted to the page for the tab close/leave guards.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
-import { DiffPanel, FileContent, LoadedFile, Side } from '../diff-view';
+import { DiffPanel, DiffPanelHandle, FileContent, LoadedFile, Side } from '../diff-view';
 import { useFileWatch } from '../use-file-watch';
 import { useGit, WORKTREE, toRev } from './git-compare';
 
 export function GitFilePane({ path }: { path: string }) {
   const { t } = useTranslation(['diff', 'common', 'git']);
-  const { setError, repo, from, to, entries, reportDirty } = useGit();
+  const { setError, repo, from, to, entries, reportDirty, reportPanel } = useGit();
 
   const [left, setLeft] = useState<LoadedFile | null>(null);
   const [right, setRight] = useState<LoadedFile | null>(null);
@@ -128,14 +128,34 @@ export function GitFilePane({ path }: { path: string }) {
     }
   }
 
-  // Reload the tab's file and clear the external-change prompt -- reused by the column-header reload button and DiffPanel.
+  // Reload the tab's file and clear the external-change prompt -- reused by the page-header reload button.
   function reloadAll() {
     void openFile(path);
     watch.dismiss();
   }
 
+  // Hoist the jump/search/reload actions into the page header (mirroring
+  // text-compare's header layout). Re-reported every render to keep the
+  // closures and gating flags fresh; the page re-renders only on flag changes.
+  // Unregistration is a separate mount-scoped effect: a cleanup on the no-deps
+  // effect would fire on every re-render and cause a report→render loop.
+  const panelRef = useRef<DiffPanelHandle>(null);
+  useEffect(() => {
+    reportPanel(path, {
+      goPrev: () => panelRef.current?.goPrev(),
+      goNext: () => panelRef.current?.goNext(),
+      toggleSearch: () => panelRef.current?.toggleSearch(),
+      reload: reloadAll,
+      canDiff,
+      hasFile: !!(left || right),
+    });
+  });
+  // Panes are keyed by path, so path is stable for a pane's whole lifetime.
+  useEffect(() => () => reportPanel(path, null), [path, reportPanel]);
+
   return (
     <DiffPanel
+      ref={panelRef}
       left={left}
       right={right}
       leftContent={leftContent}
@@ -145,6 +165,8 @@ export function GitFilePane({ path }: { path: string }) {
       onChange={onChange}
       onSave={saveFile}
       onReload={reloadAll}
+      showGlobalActions={false}
+      showReload={false}
       showStatsInFooter
       leftDirty={leftDirty}
       rightDirty={rightDirty}
