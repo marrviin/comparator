@@ -1,5 +1,5 @@
 /**
- * Application preferences: ignored directories, diff options (ignore whitespace/case),
+ * Application preferences: language, theme, ignored directories, diff options (ignore whitespace/case),
  * unsaved-changes guard, file watching.
  * Persisted via the Tauri Store plugin (JSON on disk, settings.json) rather than localStorage,
  * so preferences can be shared across windows and migrate with the app data directory.
@@ -20,11 +20,18 @@ import {
   type ReactNode,
 } from 'react';
 import { LazyStore } from '@tauri-apps/plugin-store';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { applyLang, FALLBACK_LANG, resolveLang, type Lang, type LangSetting } from './i18n';
+
+export type ThemeSetting = 'system' | 'light' | 'dark';
+/** The resolved effective theme ('system' resolved against the OS preference). */
+export type Theme = 'light' | 'dark';
 
 export interface Settings {
   /** UI language: 'system' to follow the OS, or an explicit 'zh-CN' / 'en'. */
   language: LangSetting;
+  /** UI theme: 'system' to follow the OS light/dark preference, or an explicit 'light' / 'dark'. */
+  theme: ThemeSetting;
   /** Ignore directories by name during folder comparison (exact match at any depth). */
   ignoreDirs: string[];
   /** Ignore whitespace differences (leading/trailing whitespace + collapse consecutive whitespace). */
@@ -42,6 +49,7 @@ export const BUILTIN_IGNORE_DIRS = ['.git', 'node_modules', 'target', 'dist', '.
 
 export const DEFAULT_SETTINGS: Settings = {
   language: 'system',
+  theme: 'system',
   ignoreDirs: [...BUILTIN_IGNORE_DIRS],
   ignoreWhitespace: false,
   ignoreCase: false,
@@ -83,6 +91,8 @@ interface SettingsContextValue {
   loaded: boolean;
   /** The currently effective UI language (with 'system' already resolved to a concrete language), used to derive the antd locale. */
   lang: Lang;
+  /** The currently effective theme, with 'system' already resolved against the OS preference. */
+  theme: Theme;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -92,6 +102,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   // The currently effective language: the result of resolving 'system', or the user's explicit choice.
   const [lang, setLang] = useState<Lang>(FALLBACK_LANG);
+  // The currently effective theme ('system' resolved against the OS preference).
+  // Seed from the same localStorage mirror index.html's pre-paint script reads, so the first
+  // React render agrees with the pre-painted theme; otherwise (e.g. OS light + user picked
+  // dark) the mount effect would strip the pre-painted .pc-dark and flash light until the
+  // async store load completes.
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const mirrored = localStorage.getItem('pc-theme');
+      if (mirrored === 'dark' || mirrored === 'light') return mirrored;
+    } catch {
+      // ignore: mirror is best-effort; fall back to the OS preference.
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
   // Avoid the first-frame load (writing store values back into memory) triggering one redundant saveSettings.
   const hydrating = useRef(true);
 
@@ -121,6 +145,42 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
   }, [settings.language]);
 
+  // On theme change (including once the first-frame load completes) -> resolve the effective theme.
+  // Re-resolves live when following the system: matchMedia fires on the OS light/dark switch.
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const resolve = () => {
+      if (settings.theme === 'system') setTheme(media.matches ? 'dark' : 'light');
+      else setTheme(settings.theme);
+    };
+    resolve();
+    if (settings.theme !== 'system') return;
+    media.addEventListener('change', resolve);
+    return () => media.removeEventListener('change', resolve);
+  }, [settings.theme]);
+
+  // Keep the native window's background in sync with the effective theme: the webview paints
+  // over it in normal use, but on macOS the window's own background is visible for the first
+  // frames (before the webview's first paint) and behind any transparent regions. Uses the
+  // same container colors as app.tsx's ConfigProvider seeds (colorBgContainer).
+  useEffect(() => {
+    getCurrentWindow()
+      .setBackgroundColor(theme === 'dark' ? '#1d1d1f' : '#fafafa')
+      .catch(() => {
+        // ignore: a missing permission / unsupported platform must not break settings.
+      });
+  }, [theme]);
+
+  // Mirror the raw theme setting to localStorage: index.html reads it synchronously
+  // before React mounts to pre-paint the correct theme and avoid a light flash.
+  useEffect(() => {
+    try {
+      localStorage.setItem('pc-theme', settings.theme);
+    } catch {
+      // ignore: localStorage may be unavailable; the flash-only fallback just degrades.
+    }
+  }, [settings.theme]);
+
   const update = useCallback((patch: Partial<Settings>) => {
     setSettings((prev) => {
       const next = { ...prev, ...patch };
@@ -131,7 +191,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   return createElement(
     SettingsContext.Provider,
-    { value: { settings, update, loaded, lang } },
+    { value: { settings, update, loaded, lang, theme } },
     children,
   );
 }

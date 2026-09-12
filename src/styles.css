@@ -36,7 +36,12 @@
      surface (container base `bg-surface`), line (border `border-line`), fg (body text `text-fg`). */
   --color-surface: var(--ant-color-bg-container, #fafafa);
   --color-panel: var(--ant-color-bg-layout, #f2f2f2);
-  --color-panel-2: var(--ant-color-fill-tertiary, #e9e9ec);
+  /* The header tab strip needs a solid, clearly-darker gray in light mode — antd's
+   * default fill-tertiary (4% translucent black) blends to ~#f0f0f0 over the surface,
+   * which is nearly indistinguishable from --color-panel (#f2f2f2) and kills the
+   * Chrome-style strip effect. So light pins the designed solid value here, and the
+   * .pc-dark block below re-bridges it to the antd token for dark mode. */
+  --color-panel-2: #e9e9ec;
   --color-line: var(--ant-color-border, #e8e8ea);
   --color-split: var(--ant-color-split, rgba(0, 0, 0, 0.06));
   --color-fg: var(--ant-color-text, #1f1f1f);
@@ -51,6 +56,39 @@
 
   /* Diff body uses the platform monospace stack via the `font-mono` utility. */
   --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/* ── Dark theme overrides ──────────────────────────────────────────────────────
+   Tokens bridged to var(--ant-*) above follow antd's dark algorithm automatically;
+   only the fixed-color diff palette needs explicit dark values, hung on .pc-dark
+   (toggled on <html> by app.tsx; pre-painted by the inline script in index.html). */
+:root.pc-dark {
+  --color-panel-2: var(--ant-color-fill-tertiary, #2b2b2d);
+  --color-remove-bg: #2f2024;
+  --color-remove-ln-bg: #3b2529;
+  --color-remove-strong: #5c3238;
+  --color-remove-fg: #ff8c8c;
+
+  --color-add-bg: #1c2e23;
+  --color-add-ln-bg: #233b2b;
+  --color-add-strong: #2e5a3a;
+  --color-add-fg: #7ce0a0;
+}
+
+/* Native chrome (scrollbars, form controls) follows the theme. */
+.pc-dark {
+  color-scheme: dark;
+}
+
+/* The orphan-line hatch flips to a light weave on dark backgrounds. */
+.pc-dark .filler-hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(255, 255, 255, 0.1) 5px,
+    rgba(255, 255, 255, 0.1) 10px
+  );
 }
 
 :root {
@@ -196,7 +234,9 @@ body {
   top: 0;
   bottom: 0;
   width: 5px;
-  border-left: 4px solid var(--ant-blue-2);
+  /* antd's preset palette vars are `--ant-blue2` (no dash), so use the project's accent
+     token instead — same blue intent, and it follows the dark algorithm. */
+  border-left: 4px solid var(--color-accent);
 }
 
 /* Self-drawn search match highlight (driven by SearchPopup, not Monaco's built-in find overlay). */

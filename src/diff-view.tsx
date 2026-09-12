@@ -348,8 +348,11 @@ function DiffPanelInner(
               <div
                 key={side}
                 className={cx(
-                  'flex-1 basis-0 flex items-center justify-center p-6 border-r border-line last:border-r-0 cursor-pointer transition-[background]',
-                  hoverSide === side ? 'bg-accent-bg' : 'hover:bg-accent-bg',
+                  // box-border: preflight is excluded; without it p-6 adds to the flexed
+                  // size and the row overflows horizontally by the padding.
+                  'box-border flex-1 basis-0 flex items-center justify-center p-6 border-r border-line last:border-r-0 cursor-pointer transition-[background]',
+                  // Drag-over only: plain mouse hover must not recolor the empty pane.
+                  hoverSide === side && 'bg-accent-bg',
                 )}
                 onClick={onPick ? () => onPick(side) : undefined}
                 role="button"

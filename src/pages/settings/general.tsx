@@ -5,7 +5,7 @@
  */
 import { Select, Switch } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useSettings, type Settings } from '../../settings';
+import { useSettings, type Settings, type ThemeSetting } from '../../settings';
 import type { LangSetting } from '../../i18n';
 
 /** A single-row switch setting item. */
@@ -42,7 +42,25 @@ export function GeneralTab() {
         <h3 className="m-0 text-xl font-semibold">{t('general')}</h3>
       </div>
 
-      <div className="text-xs font-semibold text-muted mt-1">{t('languageGroup')}</div>
+      <div className="text-xs font-semibold text-muted mt-1">{t('appearanceGroup')}</div>
+      <div className="flex items-center justify-between gap-4 rounded-lg bg-surface px-4 py-3">
+        <div className="min-w-0">
+          <div className="text-[13px] font-medium text-fg">{t('theme')}</div>
+          <div className="text-xs text-muted mt-0.5">{t('themeDesc')}</div>
+        </div>
+        <Select<ThemeSetting>
+          value={settings.theme}
+          onChange={(v) => set({ theme: v })}
+          className="w-[140px]"
+          options={[
+            { value: 'system', label: t('followSystem') },
+            { value: 'light', label: t('themeLight') },
+            { value: 'dark', label: t('themeDark') },
+          ]}
+        />
+      </div>
+
+      <div className="text-xs font-semibold text-muted mt-2">{t('languageGroup')}</div>
       <div className="flex items-center justify-between gap-4 rounded-lg bg-surface px-4 py-3">
         <div className="min-w-0">
           <div className="text-[13px] font-medium text-fg">{t('interfaceLanguage')}</div>

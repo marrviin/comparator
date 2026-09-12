@@ -7,17 +7,21 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom';
-import { Alert, Empty, Tooltip, Tour } from 'antd';
-import type { TourProps } from 'antd';
+import { Alert, Dropdown, Empty, Segmented } from 'antd';
+import type { MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { ConversationsProps } from '@ant-design/x';
 import { Conversations } from '@ant-design/x';
 import {
-  CompassOutlined,
+  BgColorsOutlined,
+  DiffOutlined,
   DeleteOutlined,
+  MoonOutlined,
+  QuestionCircleOutlined,
   RetweetOutlined,
   SettingOutlined,
+  SunOutlined,
 } from '@ant-design/icons';
 import {
   HistoryEntry,
@@ -28,8 +32,10 @@ import {
   removeHistory,
 } from './history';
 import { SidebarToggleSvg } from './icons';
+import { useSettings, type Theme } from './settings';
 import { materialIconUrl, materialIconUrlByName } from './material-icons';
 import { SettingsModal } from './pages/settings/settings-modal';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 /** Sidebar fixed icons are all rendered as material-icon-theme colored svgs. */
 function MaterialNavIcon({ name }: { name: string }) {
@@ -49,8 +55,6 @@ export interface ShellContext {
   setError: (msg: string) => void;
   siderCollapsed: boolean;
   onExpandSider: () => void;
-  /** Manually start the onboarding tour (expands the sidebar, then opens the Tour). */
-  startTour: () => void;
   /** Live recent-comparison list (single source of truth shared with the sidebar). */
   recent: HistoryEntry[];
   /** Record a freshly-compared pair into recent history. */
@@ -170,20 +174,57 @@ function RecentPanel({
   collapsed,
   onToggle,
   onOpenSettings,
-  onStartTour,
   onRemove,
 }: {
   recent: HistoryEntry[];
   collapsed: boolean;
   onToggle: () => void;
-  onOpenSettings: () => void;
-  onStartTour: () => void;
+  /** Opens the settings modal at the given panel (defaults to general). */
+  onOpenSettings: (pane?: string) => void;
   onRemove: (key: string) => void;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation('layout');
+  const { update, theme } = useSettings();
   const now = useMinuteTick();
+  // Dropdown menu behind the bottom "Settings" entry: a quick theme switch (Segmented pinned to
+  // the row's right edge) + the settings modal entry. The Segmented's wrapper stops click
+  // propagation so toggling it neither selects the menu item nor closes the dropdown.
+  const settingsMenuItems: MenuProps['items'] = [
+    { key: 'settings', icon: <SettingOutlined />, label: t('generalSettings') },
+    {
+      key: 'ignore',
+      icon: <DiffOutlined />,
+      label: t('compareRules'),
+    },
+    {
+      key: 'theme',
+      icon: <BgColorsOutlined />,
+      label: (
+        <div
+          className="flex items-center justify-between gap-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span>{t('theme')}</span>
+          <Segmented<Theme>
+            size="small"
+            value={theme}
+            onChange={(v) => update({ theme: v })}
+            options={[
+              { value: 'light', title: t('themeLight'), icon: <SunOutlined /> },
+              { value: 'dark', title: t('themeDark'), icon: <MoonOutlined /> },
+            ]}
+          />
+        </div>
+      ),
+    },
+    {
+      key: 'help',
+      icon: <QuestionCircleOutlined />,
+      label: t('helpFeedback'),
+    },
+  ];
   // Top navigation items (aligned with joybuddy's navItems). Just add to the array,
   // and Conversations handles unified styling/interaction automatically.
   const navItems: ConversationsProps['items'] = [
@@ -268,19 +309,8 @@ function RecentPanel({
         <aside className="h-full w-60 flex flex-col px-0 pb-4 bg-panel overflow-y-auto">
           {/* Top spacer under the native traffic lights; draggable window strip. */}
           <div className="h-10 flex-none" data-tauri-drag-region />
-          {/* Onboarding tour entry: placed above the comparison modes; click to manually start the Tour. */}
-          <div className="shrink-0 px-2 pt-2">
-            <button
-              type="button"
-              className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
-              onClick={onStartTour}
-            >
-              <CompassOutlined className="text-accent" />
-              <span className="flex-1 text-left">{t('onboarding')}</span>
-            </button>
-          </div>
           {/* Action area: comparison methods. */}
-          <div data-tour="sider-nav" className="shrink-0">
+          <div className="shrink-0">
             <Conversations
               items={navItems}
               className="px-2 pt-2"
@@ -344,17 +374,32 @@ function RecentPanel({
               }}
             />
           )}
-          {/* Fixed "Settings" entry at the bottom (mt-auto pushes it to the bottom, always visible). */}
+          {/* Fixed entry at the bottom (mt-auto pushes it to the bottom, always visible).
+              Opens a dropdown with a quick theme switch (Segmented on the row's right) and the settings modal entry. */}
           <div className="mt-auto shrink-0 px-2 py-2">
-            <button
-              type="button"
-              data-tour="sider-settings"
-              className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
-              onClick={onOpenSettings}
+            <Dropdown
+              trigger={['click']}
+              placement="topRight"
+              align={{ offset: [0, -8] }}
+              menu={{
+                style: { minWidth: 240 },
+                items: settingsMenuItems,
+                onClick: ({ key }) => {
+                  if (key === 'settings') onOpenSettings('general');
+                  if (key === 'ignore') onOpenSettings('ignore');
+                  if (key === 'help')
+                    void openUrl('https://github.com/marrviin/pure-compare/issues/new');
+                },
+              }}
             >
-              <SettingOutlined className="text-muted" />
-              <span className="flex-1 text-left">{t('settings')}</span>
-            </button>
+              <button
+                type="button"
+                className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
+              >
+                <SettingOutlined className="text-muted" />
+                <span className="flex-1 text-left">{t('settings')}</span>
+              </button>
+            </Dropdown>
           </div>
         </aside>
       </div>
@@ -376,80 +421,18 @@ function RecentPanel({
  * Root layout: single persistent shell hosting the recent sider plus the active
  * route as a content card. Shared state is provided to child routes via context.
  */
-/** Whether the onboarding tour has been seen: once seen it no longer auto-pops. Used on first entry to decide whether to show it. */
-const TOUR_SEEN_KEY = 'pc.tour.seen';
-
-/** Onboarding tour steps: introduce, in order, the drag area, the three comparison modes, sidebar navigation, and settings.
- *  The first two steps anchor to home-page elements (falling back to sidebar navigation when not on the home page); the last two anchor to the sidebar.
- *  The copy varies by language, so it's built dynamically via t (with each step's button text injected too). */
-function buildTourSteps(t: TFunction<'layout'>): TourProps['steps'] {
-  const raw: TourProps['steps'] = [
-    {
-      title: t('tourWelcomeTitle'),
-      description: t('tourWelcomeDesc'),
-      target: () =>
-        (document.querySelector('[data-tour="home-welcome"]') as HTMLElement) ??
-        (document.querySelector('[data-tour="sider-nav"]') as HTMLElement),
-    },
-    {
-      title: t('tourMethodsTitle'),
-      description: t('tourMethodsDesc'),
-      target: () =>
-        (document.querySelector('[data-tour="home-cards"]') as HTMLElement) ??
-        (document.querySelector('[data-tour="sider-nav"]') as HTMLElement),
-    },
-    {
-      title: t('tourSiderTitle'),
-      description: t('tourSiderDesc'),
-      target: () => document.querySelector('[data-tour="sider-nav"]') as HTMLElement,
-    },
-    {
-      title: t('tourPrefsTitle'),
-      description: t('tourPrefsDesc'),
-      target: () => document.querySelector('[data-tour="sider-settings"]') as HTMLElement,
-    },
-  ];
-  // Inject each step's button text: "next" except on the last step, "got it" on the last step, "previous" shown on non-first steps.
-  return raw.map((step, i) => ({
-    ...step,
-    nextButtonProps: { children: i === raw.length - 1 ? t('tourDone') : t('tourNext') },
-    prevButtonProps: { children: t('tourPrev') },
-  }));
-}
-
 export function AppLayout() {
-  const { t } = useTranslation('layout');
   const [error, setError] = useState('');
   const [recent, setRecent] = useState<HistoryEntry[]>(() => loadHistory());
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(false);
-
-  // Start the tour: first expand the sidebar (the tour points to sidebar anchors), then pop after the layout settles.
-  const startTour = () => {
-    setSiderCollapsed(false);
-    window.setTimeout(() => setTourOpen(true), 300);
-  };
-
-  // Auto-pop the tour on first use (when localStorage has no "seen" marker); runs only once on mount.
-  useEffect(() => {
-    if (localStorage.getItem(TOUR_SEEN_KEY)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 300);
-    return () => window.clearTimeout(t);
-  }, []);
-
-  // Close the tour: record that it's been seen so it no longer auto-pops afterward.
-  const closeTour = () => {
-    setTourOpen(false);
-    localStorage.setItem(TOUR_SEEN_KEY, '1');
-  };
+  const [settingsPane, setSettingsPane] = useState('general');
 
   const ctx = useMemo<ShellContext>(
     () => ({
       setError,
       siderCollapsed,
       onExpandSider: () => setSiderCollapsed(false),
-      startTour,
       recent,
       pushRecent: (left, right, kind = 'file', git) =>
         setRecent(pushHistory(left, right, kind, git)),
@@ -464,8 +447,10 @@ export function AppLayout() {
         recent={recent}
         collapsed={siderCollapsed}
         onToggle={() => setSiderCollapsed((c) => !c)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onStartTour={startTour}
+        onOpenSettings={(pane) => {
+          setSettingsPane(pane ?? 'general');
+          setSettingsOpen(true);
+        }}
         onRemove={(key) => setRecent(removeHistory(key))}
       />
       <div
@@ -475,15 +460,13 @@ export function AppLayout() {
         {error && <Alert type="error" message={error} banner showIcon closable />}
         <Outlet context={ctx} />
       </div>
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      {/* Onboarding tour: auto-pops on first entry, and can also be started manually from the sidebar's "onboarding tour".
-          gap.radius gives the mask's highlight cutout rounded corners, consistent with the rounded style of cards/buttons. */}
-      <Tour
-        open={tourOpen}
-        onClose={closeTour}
-        onFinish={closeTour}
-        steps={buildTourSteps(t)}
-        gap={{ radius: 8, offset: 8 }}
+      {/* key=settingsPane: the modal's internal pane state initializes from initialPane on mount only,
+          so remounting per target panel guarantees it always opens on the requested pane. */}
+      <SettingsModal
+        key={settingsPane}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        initialPane={settingsPane}
       />
     </div>
   );

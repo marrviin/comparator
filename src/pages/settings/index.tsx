@@ -6,14 +6,16 @@
 import { type ComponentType, createElement } from 'react';
 import { Menu } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { SettingOutlined, DiffOutlined } from '@ant-design/icons';
+import { SettingOutlined, DiffOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { GeneralTab } from './general';
 import { IgnoreTab } from './ignore';
+import { AboutTab } from './about';
 
 type IconComp = ComponentType;
 const TABS: { key: string; labelKey: string; icon: IconComp }[] = [
   { key: 'general', labelKey: 'general', icon: SettingOutlined },
   { key: 'ignore', labelKey: 'ignore', icon: DiffOutlined },
+  { key: 'about', labelKey: 'about', icon: InfoCircleOutlined },
 ];
 
 export { GeneralTab, IgnoreTab };
@@ -49,7 +51,7 @@ export function SettingsShell({ activeKey, onChange }: SettingsShellProps) {
       {/* Right content area (white background), each panel carries its own large title; this only handles scrolling. */}
       <div className="relative flex-1 min-w-0 h-full">
         <div className="h-full min-h-0 min-w-0 overflow-auto pr-11">
-          {active === 'ignore' ? <IgnoreTab /> : <GeneralTab />}
+          {active === 'ignore' ? <IgnoreTab /> : active === 'about' ? <AboutTab /> : <GeneralTab />}
         </div>
       </div>
     </div>

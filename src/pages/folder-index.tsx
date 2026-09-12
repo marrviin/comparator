@@ -228,8 +228,11 @@ export function FolderTreePane({ active }: { active: boolean }) {
         {!dir ? (
           <div
             className={cx(
-              'h-full flex items-center justify-center p-6 cursor-pointer transition-[background]',
-              hoverSide === side ? 'bg-accent-bg' : 'hover:bg-accent-bg',
+              // box-border: preflight is excluded, so h-full + p-6 in content-box would
+              // overflow the scroll container by the padding and show a phantom scrollbar.
+              'box-border h-full flex items-center justify-center p-6 cursor-pointer transition-[background]',
+              // Drag-over only: plain mouse hover must not recolor the empty pane.
+              hoverSide === side && 'bg-accent-bg',
             )}
             onClick={() => pickDir(side)}
             role="button"

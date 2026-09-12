@@ -31,7 +31,6 @@ function CardIcon({ name }: { name: string }) {
   );
 }
 
-// The onboarding tour now lives in layout (permanently mounted); the home page only provides anchors via data-tour attributes.
 
 /** Session cards; titles/descriptions are resolved via i18n at render time (titleKey/descKey). */
 const SESSIONS = [
@@ -218,7 +217,7 @@ export function HomePage() {
     <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
       <AppHeader siderCollapsed={siderCollapsed} onExpandSider={onExpandSider} bordered={false} />
       <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-7 p-4 sm:p-8">
-        <div data-tour="home-welcome" className="mb-4">
+        <div className="mb-4">
           <Welcome
             title="Pure Compare"
             icon={<img src={icon} alt="" />}
@@ -227,10 +226,7 @@ export function HomePage() {
           />
         </div>
 
-        <div
-          data-tour="home-cards"
-          className="w-full max-w-[760px] grid gap-4 justify-center grid-cols-[repeat(auto-fit,minmax(140px,1fr))]"
-        >
+        <div className="w-full max-w-[760px] grid gap-4 justify-center grid-cols-[repeat(auto-fit,minmax(140px,1fr))]">
           {SESSIONS.map((s) => (
             <Card
               key={s.key}

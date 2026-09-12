@@ -270,7 +270,7 @@ export function GitTreePane({ active }: { active: boolean }) {
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {!repo ? (
         <div
-          className="flex-1 flex items-center justify-center p-6 cursor-pointer hover:bg-accent-bg transition-[background]"
+          className="box-border flex-1 flex items-center justify-center p-6 cursor-pointer"
           onClick={pickRepo}
           role="button"
         >

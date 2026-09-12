@@ -4,6 +4,7 @@
  * own route so the views can be maintained independently.
  */
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
+import { useEffect } from 'react';
 import type { Locale } from 'antd/es/locale';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
@@ -43,18 +44,28 @@ const ANTD_LOCALES: Record<Lang, Locale> = {
   en: enUS,
 };
 
+const themeDarkAlgorithm = theme.darkAlgorithm;
+
 /**
  * antd theme + locale shell. Must live inside SettingsProvider so the locale can be derived from the current language;
  * theme tokens are language-independent, but kept here too to save one extra layer of ConfigProvider nesting.
  */
 function ThemedShell() {
-  const { lang } = useSettings();
+  const { lang, theme: appTheme } = useSettings();
+  const isDark = appTheme === 'dark';
+
+  // Toggle the root theme class: styles.css hangs the fixed-color dark overrides (diff palette,
+  // hatch, color-scheme) on it, and index.html pre-paints it before React mounts.
+  useEffect(() => {
+    document.documentElement.classList.toggle('pc-dark', isDark);
+  }, [isDark]);
+
   return (
     <ConfigProvider
       locale={ANTD_LOCALES[lang]}
       theme={{
         cssVar: { key: 'pc' },
-        algorithm: theme.defaultAlgorithm,
+        algorithm: isDark ? themeDarkAlgorithm : theme.defaultAlgorithm,
         token: {
           // Two seed colors aligned with joybuddy: accent blue + brand functional colors.
           colorPrimary: '#3768fa',
@@ -62,12 +73,13 @@ function ThemedShell() {
           colorSuccess: '#00b26f',
           colorWarning: '#f08433',
           colorError: '#f33b50',
-          // Softer strokes, rounder surfaces, light desktop background / container background.
-          colorBorder: '#e8e8ea',
+          // Softer strokes, rounder surfaces, light desktop background / container background
+          // (dark equivalents follow the same softer-than-default relationship).
+          colorBorder: isDark ? '#3a3a3c' : '#e8e8ea',
           borderRadius: 8,
-          colorBgLayout: '#f2f2f2',
-          colorBgContainer: '#fafafa',
-          controlItemBgActive: 'rgba(0,0,0,0.06)',
+          colorBgLayout: isDark ? '#161617' : '#f2f2f2',
+          colorBgContainer: isDark ? '#1d1d1f' : '#fafafa',
+          controlItemBgActive: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
         },
         components: {
           // Flat buttons — remove antd's default primary/default/danger button shadows.

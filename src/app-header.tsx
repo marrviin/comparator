@@ -11,7 +11,6 @@
  */
 import { ReactNode } from 'react';
 import cx from 'classnames';
-import { Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { SidebarToggleSvg } from './icons';
 
