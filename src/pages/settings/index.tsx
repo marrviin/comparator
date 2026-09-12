@@ -32,9 +32,10 @@ export function SettingsShell({ activeKey, onChange }: SettingsShellProps) {
   const active = TABS.some((t) => t.key === activeKey) ? activeKey : 'general';
 
   return (
-    <div className="flex h-full overflow-hidden bg-surface [&>*]:min-h-0 [&>*]:min-w-0">
-      {/* Left icon menu: uses antd Menu (controlled selectedKeys), light-gray background + rounded selected block. */}
-      <nav className="w-[220px] shrink-0 h-full overflow-auto border-r border-line bg-panel px-2 py-4">
+    <div className="flex h-full overflow-hidden [&>*]:min-h-0 [&>*]:min-w-0">
+      {/* Left icon menu: uses antd Menu (controlled selectedKeys), rounded selected block.
+          No background here — the modal panel carries the frosted-glass layer (.pc-glass-modal). */}
+      <nav className="w-[220px] shrink-0 h-full overflow-auto border-r border-line px-2 py-4">
         <Menu
           mode="inline"
           selectedKeys={[active]}

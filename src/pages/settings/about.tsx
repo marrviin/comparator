@@ -23,8 +23,8 @@ export function AboutTab() {
 
   return (
     <div className="px-6 pb-8 flex flex-col gap-4">
-      <div className="sticky top-0 z-10 -mx-6 px-6 flex h-[54px] shrink-0 items-center bg-surface">
-        <h3 className="m-0 text-xl font-semibold">{t('about')}</h3>
+      <div className="sticky top-0 z-10 -mx-6 px-6 flex h-[54px] shrink-0 items-center">
+        <h3 className="m-0 text-md font-semibold">{t('about')}</h3>
       </div>
 
       <div className="flex flex-col items-center gap-3 py-14">

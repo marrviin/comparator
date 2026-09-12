@@ -296,7 +296,7 @@ function DiffPanelInner(
       style={{ flex: `${side === 'left' ? leftRatio : 1 - leftRatio} 0 0` }}
     >
       {showStatsInFooter && canDiff ? (
-        <Tag color={side === 'left' ? 'error' : 'success'} style={{ marginInlineEnd: 0 }}>
+        <Tag color={side === 'left' ? 'error' : 'success'} className="me-0">
           {side === 'left' ? `-${footerStats.removed}` : `+${footerStats.added}`}
         </Tag>
       ) : (

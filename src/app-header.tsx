@@ -58,8 +58,10 @@ export function AppHeader({
           during the expand animation. Width is 99px when collapsed (64 traffic-light
           spacer + 28 button + gap), and collapses to 0 when expanded. */}
       <div
-        className="flex-none flex items-center self-stretch overflow-hidden transition-[width] duration-200 ease-in-out [-webkit-app-region:no-drag]"
-        style={{ width: siderCollapsed ? 108 : 0, marginLeft: siderCollapsed ? '6px' : 0 }}
+        className={cx(
+          'flex-none flex items-center self-stretch overflow-hidden transition-[width] duration-200 ease-in-out [-webkit-app-region:no-drag]',
+          siderCollapsed ? 'w-[108px] ml-1.5' : 'w-0 ml-0',
+        )}
         aria-hidden={!siderCollapsed}
         data-tauri-drag-region
       >
@@ -68,7 +70,7 @@ export function AppHeader({
           type="button"
           aria-label={t('expandSider')}
           tabIndex={siderCollapsed ? 0 : -1}
-          className="flex-none text-[14px] flex items-center justify-center w-7 h-7 rounded-md text-muted bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover"
+          className="flex-none text-[14px] flex items-center justify-center w-7 h-7 rounded-md text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover"
           onClick={onExpandSider}
         >
           <SidebarToggleSvg />

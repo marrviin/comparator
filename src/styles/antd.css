@@ -1,0 +1,309 @@
+/* ── Vendor overrides: antd / @ant-design/x ───────────────────────────────────
+ * Deep selectors into antd internals must live here (they can't be expressed as
+ * Tailwind classes on our own elements — we don't render those nodes). Ordered
+ * per component. Blocks inside `@layer components` sit after the antd/antdx
+ * cssinjs layers, so they reliably win without !important. */
+
+/* @ant-design/x Conversations chrome — aligned with joybuddy sidebar ──
+ * @ant-design/x's Conversations ships a neutral-gray skin (hover background, rounded corners,
+ * padding) that's disconnected from this project's theme. Here we re-hang the item's spacing/background/text
+ * onto project tokens, so the height and content spacing match joybuddy's sidebar. Only the sidebar mounts this component, so the global prefix is safe. */
+@layer components {
+  /* Last-opened time pinned to the row's right edge; hidden on hover so the
+   * built-in three-dot menu icon (which fades in on item hover) takes over.
+   * visibility (not display) keeps the slot reserved, so the marquee text can
+   * never slide underneath the dots. The time hides with the same 0.25s delay
+   * as the dots' delayed fade-in (no blank gap), but comes back instantly on
+   * mouse-out — transitions resolve against the destination state, so the
+   * delay only lives on the :hover rule. */
+  .recent-time {
+    flex: none;
+    padding-left: 6px;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--color-muted);
+    white-space: nowrap;
+    transition: visibility 0s;
+  }
+  .ant-conversations-item:hover .recent-time {
+    visibility: hidden;
+    transition: visibility 0s 0.25s;
+  }
+  /* Take the three-dot trigger out of flow and pin it to the item's right edge:
+   * its (invisible) inline slot would otherwise sit between the marquee and the
+   * time, keeping the time from sitting flush right. Delayed fade-in on item
+   * hover (skims across rows don't flash the dots), immediate fade-out on leave —
+   * transitions resolve against the destination state, so the 0.25s delay only
+   * lives on the :hover rules. */
+  .ant-conversations-item .ant-conversations-menu-icon {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .ant-conversations-item:hover .ant-conversations-menu-icon {
+    opacity: 0.6;
+    transition: opacity 0.15s ease 0.25s;
+  }
+  .ant-conversations-item .ant-conversations-menu-icon:hover {
+    opacity: 1;
+    transition: opacity 0.15s ease;
+  }
+  /* X's item row is flex with an 8px gap; the dots' zero-width wrapper div still
+   * occupies a slot, so its gap keeps the label (and the time at its right edge)
+   * ~8px left of the pinned dots. Cancel that last gap to align both right edges. */
+  .ant-conversations-item > div:has(> .ant-conversations-menu-icon) {
+    margin-right: calc(var(--ant-padding-xs, 8px) * -1);
+  }
+  .ant-conversations-item {
+    color: var(--ant-color-text);
+    position: relative;
+    /* The component defaults to minHeight=controlHeightLG (40px), marginBlock=marginXXS (4px).
+     * The sidebar wants to be more compact: lock to 32px height; top/bottom margins are controlled by the component's classNames (see app.tsx),
+     * zeroed here to avoid stacking with classNames' my-*. */
+    min-height: 2rem;
+    height: 2rem;
+    margin-block: 0;
+    /* Horizontal padding locked to 8px, matching the px-2 of the sidebar's "onboarding tour / settings" custom buttons,
+     * ensuring all three menu icons' left edges sit on the same vertical line. */
+    padding-inline: 8px;
+    /* After locking a fixed height, flex centering must be explicitly restored so the icon and text align vertically within the 32px row. */
+    display: flex;
+    align-items: center;
+  }
+  .ant-conversations-item .ant-conversations-icon {
+    display: flex;
+    align-items: center;
+  }
+  .ant-conversations-item .ant-conversations-label {
+    color: var(--ant-color-text);
+    min-width: 0;
+    overflow: hidden;
+    /* Offset the baseline sink caused by the default lineHeight, centering coaxially with the icon. */
+    display: flex;
+    align-items: center;
+    line-height: 1;
+  }
+  .ant-conversations-item:hover {
+    background: var(--ant-control-item-bg-active, var(--ant-color-bg-layout));
+  }
+  .ant-conversations-item-active,
+  .ant-conversations-item-active:hover {
+    background: var(--ant-control-item-bg-active, var(--ant-color-bg-layout));
+  }
+  .ant-conversations-item-active .ant-conversations-label,
+  .ant-conversations-item-active .ant-conversations-icon {
+    color: var(--ant-color-text);
+  }
+  .ant-conversations-group-title {
+    color: var(--ant-color-text-tertiary);
+  }
+}
+
+/* Git/Folder comparison toolbar: the ref picker Select's trigger must not overflow its flex container.
+ * The Select uses antd's cssinjs, so we must match or exceed its selector specificity.
+ * overflow:hidden on the selector wrapper clips long branch/commit names. */
+@layer components {
+  .ref-picker-select.ant-select .ant-select-selector {
+    overflow: hidden;
+    max-width: 100%;
+  }
+  .ref-picker-select.ant-select .ant-select-selection-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block !important;
+    max-width: 100%;
+  }
+  .ref-picker-select.ant-select .ant-select-selection-search {
+    max-width: 100%;
+    display: inline-block;
+  }
+  .ref-picker-select.ant-select .ant-select-selection-search-input {
+    max-width: 100%;
+  }
+}
+
+/* The "two-pane diff table" for folder / Git comparison (antd Table tree + virtual scrolling).
+ * The goal is to make the Table look like a compact directory tree: remove heavy borders, compress row height, no cell wrapping.
+ * Kept unlayered (not in @layer components) so it beats antd's cssinjs outright where !important is used below. */
+.diff-side-table,
+.diff-side-table .ant-table-wrapper,
+.diff-side-table .ant-spin,
+.diff-side-table .ant-spin-nested-loading,
+.diff-side-table .ant-spin-container,
+.diff-side-table .ant-table {
+  height: 100%;
+}
+/* Stretch the virtual body to fill the space below the header so the floating
+ * horizontal scrollbar (absolute, bottom: 0 inside the virtual container) docks
+ * at the bottom of the pane instead of right under the last row — a short file
+ * list must still fill the page vertically. */
+.diff-side-table .ant-table-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.diff-side-table .ant-table-tbody-virtual {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* antd inline-sets max-height to the raw scroll.y (the full pane height, header
+ * included) on the holder; clamp it to the flexed body area instead so the pane
+ * never gains an outer vertical scrollbar from the header's height. */
+.diff-side-table .ant-table-tbody-virtual-holder {
+  max-height: 100% !important;
+}
+.diff-side-table .ant-table {
+  background: transparent;
+}
+/* Avoid text being selected when the right-click menu pops (row text in folder / Git comparison),
+ * and keep the plain arrow cursor over file names instead of the text I-beam. */
+.diff-side-table,
+.diff-side-table * {
+  user-select: none;
+  cursor: default;
+}
+/* Exception: the row expand/collapse icon stays a pointer (it's genuinely clickable). */
+.diff-side-table .ant-table-row-expand-icon {
+  cursor: pointer;
+}
+/* Remove the Table's built-in rounded corners (embedded in the two-pane box, needs square flush edges). antd hangs the top
+ * rounded corners on .ant-table and the inner <table>, and sets rounded corners separately on the first/last header cells. */
+.diff-side-table,
+.diff-side-table .ant-table-wrapper,
+.diff-side-table .ant-table,
+.diff-side-table .ant-table table,
+.diff-side-table .ant-table-container,
+.diff-side-table .ant-table-header,
+.diff-side-table .ant-table-content,
+.diff-side-table .ant-table-body,
+.diff-side-table .ant-table-tbody-virtual-holder,
+.diff-side-table .ant-table-thead > tr > th:first-child,
+.diff-side-table .ant-table-thead > tr > th:last-child {
+  border-radius: 0;
+}
+/* Header: flattened, matching the panel background, acting as the column-title row. */
+.diff-side-table .ant-table-thead > tr > th {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-muted);
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-line);
+}
+.diff-side-table .ant-table-thead > tr > th::before {
+  display: none; /* Remove the column separator vertical line */
+}
+/* Fallback: force all elements in the table to square flush edges (in virtual mode, when there's a scrollbar on the right,
+ * antd keeps a rounded corner on the .ant-table container's top-right, making the two panes' corners inconsistent). */
+.diff-side-table
+  :where(
+    .ant-table,
+    .ant-table-container,
+    .ant-table-header,
+    .ant-table-body,
+    .ant-table-content,
+    .ant-table-tbody-virtual-holder,
+    .ant-table-thead > tr > th
+  ) {
+  border-radius: 0 !important;
+}
+/* The virtual table's self-drawn scrollbar (rc-virtual-list) has rounded tracks and thumbs by default; flatten them too.
+ * Covers both vertical / horizontal scrollbar containers and their thumbs; antd's virtual horizontal scrollbar has its own separate class name. */
+.diff-side-table .rc-virtual-list-scrollbar,
+.diff-side-table .rc-virtual-list-scrollbar-horizontal,
+.diff-side-table .rc-virtual-list-scrollbar-vertical,
+.diff-side-table .rc-virtual-list-scrollbar-thumb,
+.diff-side-table [class*='ant-table-tbody-virtual-scrollbar'] {
+  border-radius: 0 !important;
+}
+/* When horizontally scrollable, antd v6 uses .ant-table-container's ::before (left) / ::after (right)
+ * pseudo-elements to draw a vertical scroll shadow with an inset box-shadow, lit up on
+ * .ant-table-fix-start-shadow-show / -fix-end-shadow-show; the right one's top
+ * shows a "small rounded top-right shadow" following the container's rounded corner. Fixed columns' -cell-fix-* are the same. Disable all of them.
+ * (The old .ant-table-ping-left/right naming no longer works in v6.) */
+.diff-side-table .ant-table-container::before,
+.diff-side-table .ant-table-container::after,
+.diff-side-table .ant-table-cell-fix-start::after,
+.diff-side-table .ant-table-cell-fix-end::after,
+.diff-side-table [class*='shadow-show']::before,
+.diff-side-table [class*='shadow-show']::after {
+  box-shadow: none !important;
+  display: none !important;
+}
+/* Header background exactly matches the toolbar (--panel): uniformly override when the virtual-mode header row/container has its own background. */
+.diff-side-table .ant-table-header,
+.diff-side-table .ant-table-thead,
+.diff-side-table .ant-table-thead > tr > th {
+  background: var(--color-panel) !important;
+}
+/* Cells: compact, single-line, ellipsis on overflow. A fixed row height is key -- a blank-side cell without an icon
+ * would collapse to the text line height, and virtual mode's per-row height measurement would then make the two panes' row heights inconsistent → misalignment. Here all
+ * cells are pinned to a uniform height (16px icon + top/bottom padding), so blank rows and content rows are strictly equal in height. */
+.diff-side-table .ant-table-tbody > tr > td,
+.diff-side-table .ant-table-tbody-virtual .ant-table-cell {
+  height: 24px;
+  padding: 0 8px;
+  line-height: 24px;
+  border-bottom: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Zebra stripes: stable coloring by the component-injected visible-row parity (nth-child drifts under virtual scrolling).
+ * Both panes share records + expandedKeys → identical left/right parity → zebra alignment. */
+.diff-side-table .ant-table-row.zebra-odd > td,
+.diff-side-table .ant-table-row.zebra-odd .ant-table-cell {
+  background: var(--color-zebra, rgba(128, 128, 128, 0.05));
+}
+/* Directory rows that don't exist on this side: hide the expand/collapse button (this side has no content to expand).
+ * No longer overlaying a placeholder texture → blank rows' zebra stripes are the same color as non-blank rows. */
+.diff-side-table .ant-table-row.diff-row-absent .ant-table-row-expand-icon {
+  visibility: hidden;
+}
+/* The virtual table uses rc-virtual-list's self-drawn scrollbar (absolutely positioned, floating over the top-right of the content),
+ * which covers the last column's (modified time) trailing characters. Reserve scrollbar width on the right of the virtual body's last row/cell column
+ * so the content avoids the scrollbar. The header has no scrollbar; add matching right padding to keep it aligned. */
+.diff-side-table .ant-table-tbody-virtual .ant-table-row > .ant-table-cell:last-child,
+.diff-side-table .ant-table-thead > tr > th:last-child {
+  padding-right: 16px;
+}
+/* Hover / selection highlight must cover the zebra and placeholder background colors. */
+.diff-side-table .ant-table-row:hover > td,
+.diff-side-table .ant-table-row:hover .ant-table-cell {
+  background: var(--color-hover, rgba(128, 128, 128, 0.12));
+}
+.diff-side-table .ant-table-row.diff-row-selected > td,
+.diff-side-table .ant-table-row.diff-row-selected .ant-table-cell {
+  background: var(--color-accent-bg, rgba(64, 128, 255, 0.14));
+}
+
+/* ── Frosted-glass settings modal ─────────────────────────────────────────────
+   The modal panel is translucent and backdrop-blurs the app content behind it —
+   the in-page equivalent of vibrancy, since the native NSVisualEffectView
+   material can't apply to DOM overlays. Pairs with --pc-glass-bg in tokens.css;
+   SettingsShell's root/nav keep no background so the glass reads through. */
+.pc-glass-modal .ant-modal-container {
+  background: var(--pc-glass-bg, rgba(250, 250, 250, 0.8));
+  backdrop-filter: blur(28px) saturate(1.6);
+  /* The prefix is required: the app runs in WKWebView (Tauri macOS), where
+   * backdrop-filter is only supported with -webkit-. */
+  -webkit-backdrop-filter: blur(28px) saturate(1.6); /* stylelint-disable-line property-no-vendor-prefix */
+}
+
+/* ── Frosted-glass dropdown menus ─────────────────────────────────────────────
+   Same in-page vibrancy treatment as the settings modal (.pc-glass-modal): the
+   popup menu is translucent and backdrop-blurs the content behind it. Applies
+   to every Dropdown popup (sidebar settings menu, recent-item delete menu, …);
+   the Menu's own colorBgElevated background is overridden here. Reuses the
+   --pc-glass-bg token so both layers stay in tune. */
+.ant-dropdown .ant-dropdown-menu {
+  background: var(--pc-glass-bg, rgba(250, 250, 250, 0.9));
+  backdrop-filter: blur(24px) saturate(1.6);
+  /* The prefix is required: the app runs in WKWebView (Tauri macOS), where
+   * backdrop-filter is only supported with -webkit-. */
+  -webkit-backdrop-filter: blur(24px) saturate(1.6); /* stylelint-disable-line property-no-vendor-prefix */
+}

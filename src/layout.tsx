@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { ConversationsProps } from '@ant-design/x';
 import { Conversations } from '@ant-design/x';
+import cx from 'classnames';
 import {
   BgColorsOutlined,
   DiffOutlined,
@@ -104,7 +105,7 @@ function relativeTime(ts: number, now: number, t: TFunction<'layout'>): string {
  * a CSS variable to drive the animation; no scrolling is triggered when there is no
  * overflow. Scroll speed is derived from the overflow distance to keep a constant pace.
  */
-function MarqueeLabel({ text }: { text: ReactNode }) {
+function MarqueeLabel({ text, className }: { text: ReactNode; className?: string }) {
   const wrapRef = useRef<HTMLSpanElement>(null);
   const innerRef = useRef<HTMLSpanElement>(null);
   const [shift, setShift] = useState(0);
@@ -149,7 +150,7 @@ function MarqueeLabel({ text }: { text: ReactNode }) {
   return (
     <span
       ref={wrapRef}
-      className="recent-marquee"
+      className={cx('recent-marquee', className)}
       onMouseEnter={measure}
       style={
         {
@@ -216,6 +217,9 @@ function RecentPanel({
               { value: 'light', title: t('themeLight'), icon: <SunOutlined /> },
               { value: 'dark', title: t('themeDark'), icon: <MoonOutlined /> },
             ]}
+            classNames={{
+              root: '[&_.ant-segmented-group]:gap-0.5',
+            }}
           />
         </div>
       ),
@@ -253,18 +257,19 @@ function RecentPanel({
     return {
       key,
       label: (
-        <span className="recent-item-row">
+        <span className="flex items-center w-full min-w-0">
           <MarqueeLabel
+            className="flex-[1_1_auto] w-auto"
             text={
               // Git comparisons dedupe per repo and show only the repo's directory
               // name; file/folder comparisons show the left/right pair.
               e.kind === 'git' ? (
-                <span className="recent-name">{basename(e.repo ?? '')}</span>
+                <span className="whitespace-nowrap">{basename(e.repo ?? '')}</span>
               ) : (
-                <span className="recent-line">
-                  <span className="recent-name">{e.leftName}</span>
-                  <RetweetOutlined className="recent-swap text-muted text-[12px]" />
-                  <span className="recent-name">{e.rightName}</span>
+                <span className="inline whitespace-nowrap">
+                  <span className="whitespace-nowrap">{e.leftName}</span>
+                  <RetweetOutlined className="inline-flex align-middle mx-1 text-muted text-[12px]" />
+                  <span className="whitespace-nowrap">{e.rightName}</span>
                 </span>
               )
             }
@@ -303,8 +308,10 @@ function RecentPanel({
           : undefined;
   return (
     <div
-      className="relative flex-none h-full transition-[width] duration-200 ease-in-out"
-      style={{ width: collapsed ? 0 : 240 }}
+      className={cx(
+        'relative flex-none h-full overflow-hidden transition-[width] duration-200 ease-in-out',
+        collapsed ? 'w-0' : 'w-60',
+      )}
     >
       <div className="h-full w-60 overflow-hidden">
         <aside className="h-full w-60 flex flex-col px-0 pb-4 overflow-y-auto">
@@ -399,7 +406,7 @@ function RecentPanel({
                 type="button"
                 className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-sm text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
               >
-                <SettingOutlined className="text-muted" />
+                <SettingOutlined />
                 <span className="flex-1 text-left">{t('settings')}</span>
               </button>
             </Dropdown>
@@ -410,7 +417,7 @@ function RecentPanel({
         <button
           type="button"
           aria-label={t('collapseSider')}
-          className="text-[14px] absolute top-[15px] left-51 z-20 flex items-center justify-center w-7 h-7 rounded-md text-muted bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
+          className="text-[14px] absolute top-[15px] left-51 z-20 flex items-center justify-center w-7 h-7 rounded-md text-fg bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
           onClick={onToggle}
         >
           <SidebarToggleSvg />
@@ -447,7 +454,7 @@ export function AppLayout() {
   return (
     // macOS vibrancy: the shell root paints the theme-tinted translucent wash over the
     // system blur material; non-mac keeps the opaque bg-panel shell.
-    <div className={`flex h-screen overflow-hidden ${isMac ? 'pc-vibrancy-wash' : 'bg-panel'}`}>
+    <div className={cx('flex h-screen overflow-hidden', isMac ? 'pc-vibrancy-wash' : 'bg-panel')}>
       <RecentPanel
         recent={recent}
         collapsed={siderCollapsed}
@@ -459,7 +466,7 @@ export function AppLayout() {
         onRemove={(key) => setRecent(removeHistory(key))}
       />
       <div
-        className="group/card relative flex flex-col flex-1 min-w-0 bg-surface border border-white dark:border-white/10 overflow-hidden m-2 rounded-[12px] outline outline-(--color-line)"
+        className="group/card relative flex flex-col flex-1 min-w-0 bg-surface border border-white/10 dark:border-white/10 overflow-hidden m-2 rounded-[12px] outline outline-(--color-line)"
         data-collapsed={siderCollapsed}
       >
         {error && <Alert type="error" message={error} banner showIcon closable />}

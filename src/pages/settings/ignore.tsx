@@ -46,8 +46,8 @@ export function IgnoreTab() {
 
   return (
     <div className="px-6 pb-8 flex flex-col gap-4">
-      <div className="sticky top-0 z-10 -mx-6 px-6 flex h-[54px] shrink-0 items-center bg-surface">
-        <h3 className="m-0 text-xl font-semibold">{t('ignore')}</h3>
+      <div className="sticky top-0 z-10 -mx-6 px-6 flex h-[54px] shrink-0 items-center">
+        <h3 className="m-0 text-md font-semibold">{t('ignore')}</h3>
       </div>
 
       <div className="text-xs font-semibold text-muted mt-1">{t('compareOptions')}</div>
