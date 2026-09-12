@@ -252,10 +252,14 @@ pub fn git_diff_refs(repo: String, from: String, to: String) -> Result<Vec<GitFi
     // `git diff` only accepts the worktree as the implicit right side, so when
     // the worktree is picked on the LEFT we diff `<to>` against the worktree
     // and swap every row's sides afterwards (added <-> removed) to put the
-    // worktree back on the left.
+    // worktree back on the left. With a ref on both sides, pass both so the
+    // comparison is from..to instead of `from` vs the worktree.
     let swap = from.is_empty();
     let mut args: Vec<&str> = vec!["diff", "--raw", "-M", "--no-color", "--abbrev=40"];
     args.push(if swap { &to } else { &from });
+    if !swap && !to.is_empty() {
+        args.push(&to);
+    }
     let out = run_git_str(&repo, &args)?;
 
     // Display-side refs after the potential swap; the worktree side ("") uses
