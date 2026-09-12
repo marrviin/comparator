@@ -26,6 +26,9 @@ jobs:
         uses: mikepenz/release-changelog-builder-action@v5
         with:
           configuration: .github/changelog-config.json
+          # 仓库采用直接 push 提交（无 PR），必须用 commit 模式，
+          # 否则 PR 模式下找不到 merged PR 会生成空 changelog
+          commitMode: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
