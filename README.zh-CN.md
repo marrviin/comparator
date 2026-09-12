@@ -9,6 +9,8 @@ Beyond Compare、Meld 的轻量原生替代品 —— 免费且开源。
 
 [English](./README.md) · **简体中文**
 
+🌐 **官网**：[https://marrviin.github.io/pure-compare/zh.html](https://marrviin.github.io/pure-compare/zh.html)
+
 [![CI](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/marrviin/pure-compare?include_prereleases&sort=semver)](https://github.com/marrviin/pure-compare/releases)
 [![Downloads](https://img.shields.io/github/downloads/marrviin/pure-compare/total)](https://github.com/marrviin/pure-compare/releases)

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docs — Text, Folder & Git Compare — Pure Compare</title>
+    <meta
+      name="description"
+      content="Pure Compare documentation: how to use text compare, folder compare, and Git compare, fix unsigned-app install prompts, encoding detection, and FAQ."
+    />
+    <link rel="canonical" href="https://marrviin.github.io/pure-compare/docs.html" />
+    <link rel="alternate" hreflang="en" href="https://marrviin.github.io/pure-compare/docs.html" />
+    <link
+      rel="alternate"
+      hreflang="zh-CN"
+      href="https://marrviin.github.io/pure-compare/docs.zh.html"
+    />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://marrviin.github.io/pure-compare/docs.html"
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Pure Compare" />
+    <meta property="og:title" content="Pure Compare Docs — Text, Folder & Git Compare" />
+    <meta
+      property="og:description"
+      content="How to install and use Pure Compare: text, folder, and Git compare, encoding detection, and install troubleshooting."
+    />
+    <meta property="og:url" content="https://marrviin.github.io/pure-compare/docs.html" />
+    <meta
+      property="og:image"
+      content="https://marrviin.github.io/pure-compare/images/text-en.png"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I fix the \"developer cannot be verified\" or \"damaged app\" prompt on macOS?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The installers are not code-signed yet. Right-click the app in Finder and choose Open, or go to System Settings → Privacy & Security → Open Anyway. If macOS reports the app is damaged, run xattr -cr /Applications/Pure\\ Compare.app once from Terminal."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Windows SmartScreen block the installer?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "SmartScreen may show \"Windows protected your PC\" for the unsigned installer. Click More info, then Run anyway. This applies to both the .msi and .exe packages and only appears once."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Pure Compare collect any data?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Pure Compare has no telemetry, requires no account, and is MIT-licensed open source."
+            }
+          }
+        ]
+      }
+    </script>
+    <link rel="icon" type="image/png" href="./images/app-icon.png" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <nav>
+      <div class="container nav-inner">
+        <a class="brand" href="./index.html"
+          ><img class="brand-mark" src="./images/app-icon.png" alt="" />Pure Compare</a
+        >
+        <div class="nav-right">
+          <div class="nav-links">
+            <a href="./index.html">Home</a>
+            <a href="./docs.html" class="active">Docs</a>
+            <a href="./changelog.html">Changelog</a>
+            <a href="./index.html#download">Download</a>
+            <span class="lang-switch">
+              <a href="./docs.html" class="active">EN</a>
+              <a href="./docs.zh.html">中文</a>
+            </span>
+          </div>
+          <a class="nav-gh" href="https://github.com/marrviin/pure-compare" aria-label="GitHub">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+              />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="page">
+      <div class="container">
+        <div class="doc-grid">
+          <nav class="doc-toc" aria-label="On this page">
+            <a href="#getting-started">Getting started</a>
+            <a href="#installation-issues">Installation issues</a>
+            <a href="#text-compare">Text compare</a>
+            <a href="#folder-compare">Folder compare</a>
+            <a href="#git-compare">Git compare</a>
+            <a href="#encodings-and-safety">Encodings &amp; safety</a>
+            <a href="#interface">Interface</a>
+            <a href="#faq">FAQ</a>
+          </nav>
+
+          <div>
+            <div class="page-head">
+              <span class="kicker">Docs</span>
+              <h1>Documentation</h1>
+              <p class="page-sub">
+                How to install Pure Compare and get the most out of text, folder, and Git compare.
+              </p>
+            </div>
+
+            <div class="doc-body">
+              <h2 id="getting-started">Getting started</h2>
+              <p>
+                Download an installer from the
+                <a href="https://github.com/marrviin/pure-compare/releases/latest"
+                  >latest release</a
+                >
+                for your platform:
+              </p>
+              <ul>
+                <li><strong>macOS</strong> — <code>.dmg</code> (Apple Silicon + Intel)</li>
+                <li><strong>Windows</strong> — <code>.msi</code> / <code>.exe</code></li>
+                <li><strong>Linux</strong> — <code>.AppImage</code> / <code>.deb</code></li>
+              </ul>
+              <p>
+                Launch the app and pick two files to run your first diff. Recent comparisons stay on
+                the home screen and reopen in one click.
+              </p>
+
+              <h2 id="installation-issues">Installation issues</h2>
+              <p>
+                The installers are not code-signed yet, so macOS and Windows may show a one-time
+                security prompt on first launch. This is expected for unsigned apps — here is how to
+                get past each one:
+              </p>
+              <ul>
+                <li>
+                  <strong
+                    >macOS — "cannot be opened because the developer cannot be verified"</strong
+                  >: right-click the app in <strong>Finder</strong> (not Launchpad) and choose
+                  <strong>Open</strong>, then confirm <strong>Open</strong> in the dialog. Or open
+                  <strong>System Settings → Privacy &amp; Security</strong>, scroll down to the
+                  <strong>Security</strong> section, and click <strong>Open Anyway</strong>.
+                </li>
+                <li>
+                  <strong>macOS — "app is damaged and can't be opened"</strong>: the download was
+                  quarantined. Clear the flag once from Terminal with
+                  <code>xattr -cr /Applications/Pure\ Compare.app</code>, then open the app
+                  normally.
+                </li>
+                <li>
+                  <strong>Windows — SmartScreen "Windows protected your PC"</strong>: click
+                  <strong>More info</strong>, then <strong>Run anyway</strong>. The same applies to
+                  both the <code>.msi</code> installer and the <code>.exe</code> setup.
+                </li>
+                <li>
+                  <strong>Linux — AppImage won't start</strong>: make it executable first with
+                  <code>chmod +x *.AppImage</code>, then run it. For the <code>.deb</code>:
+                  <code>sudo dpkg -i pure-compare_*.deb</code>.
+                </li>
+              </ul>
+              <p>You only need to do this once — later launches open normally.</p>
+
+              <h2 id="text-compare">Text compare</h2>
+              <ul>
+                <li>Drag in or pick two files — the diff opens side by side, line by line.</li>
+                <li>
+                  <strong>Two-way editing</strong>: type in either pane and save your changes.
+                </li>
+                <li>
+                  Syntax highlighting and large-file handling come from the Monaco editor — the same
+                  engine behind VS Code.
+                </li>
+              </ul>
+
+              <h2 id="folder-compare">Folder compare</h2>
+              <ul>
+                <li>Pick two directories — both trees are walked recursively.</li>
+                <li>
+                  Every entry is flagged <strong>added / modified / deleted</strong> at a glance.
+                </li>
+                <li>Open any file to drill down into its line-by-line diff.</li>
+                <li>File types show real icons, powered by Material Icon Theme.</li>
+              </ul>
+
+              <h2 id="git-compare">Git compare</h2>
+              <ul>
+                <li>
+                  Open a repository and diff <strong>any two refs</strong> — a branch, a tag, a
+                  commit, or the working tree, on either side.
+                </li>
+                <li>Browse the changed-file list with rename detection built in.</li>
+                <li>Select a file to view its per-line diff.</li>
+                <li>Check out individual files when you only need one change back.</li>
+              </ul>
+
+              <h2 id="encodings-and-safety">Encodings &amp; safety</h2>
+              <ul>
+                <li>
+                  Automatic encoding detection: <code>UTF-8</code>, <code>UTF-16</code> (BOM),
+                  <code>GBK</code>, and more.
+                </li>
+                <li>
+                  Binary files are detected up front; very large files hit a truncation guard
+                  instead of freezing the UI.
+                </li>
+                <li>Open files are watched — external edits refresh the diff live.</li>
+                <li>An unsaved-changes guard protects in-progress edits.</li>
+                <li>Ignore rules keep build output and dependencies out of folder comparisons.</li>
+              </ul>
+
+              <h2 id="interface">Interface</h2>
+              <ul>
+                <li>Chrome-style header tabs keep several comparisons open at once.</li>
+                <li>
+                  The recent list dedupes entries, removes items on hover, and sorts by last opened.
+                </li>
+                <li>
+                  Dark and light themes with a quick switch; the macOS sidebar uses native vibrancy.
+                </li>
+              </ul>
+
+              <h2 id="faq">FAQ</h2>
+              <ul>
+                <li>
+                  <strong>Install prompts or "damaged app" warnings</strong> — see
+                  <a href="#installation-issues">Installation issues</a> above.
+                </li>
+                <li>
+                  <strong>Does it phone home?</strong> — No. No telemetry, no account, MIT licensed.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="foot-links">
+          <a href="https://github.com/marrviin/pure-compare">GitHub</a>
+          <a href="https://github.com/marrviin/pure-compare/releases">Releases</a>
+          <a href="https://github.com/marrviin/pure-compare/blob/main/LICENSE">MIT License</a>
+          <a href="./docs.zh.html">简体中文</a>
+        </div>
+        <p>© Pure Compare contributors</p>
+      </div>
+    </footer>
+  </body>
+</html>

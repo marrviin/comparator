@@ -1,5 +1,2 @@
-node_modules
-dist
-build
-src-tauri
-public
+# The standalone website doesn't follow the app's CSS conventions
+website/

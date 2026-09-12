@@ -9,6 +9,8 @@ A lightweight, native desktop alternative to Beyond Compare and Meld — free an
 
 **English** · [简体中文](./README.zh-CN.md)
 
+🌐 **Website**: [https://marrviin.github.io/pure-compare/](https://marrviin.github.io/pure-compare/)
+
 [![CI](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/marrviin/pure-compare?include_prereleases&sort=semver)](https://github.com/marrviin/pure-compare/releases)
 [![Downloads](https://img.shields.io/github/downloads/marrviin/pure-compare/total)](https://github.com/marrviin/pure-compare/releases)
