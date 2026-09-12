@@ -84,7 +84,7 @@ export function AppHeader({
         <div className="flex-1 min-w-0 self-stretch flex">{tabs}</div>
       )}
       {right && (
-        <div className="ml-auto flex items-center [-webkit-app-region:no-drag]">{right}</div>
+        <div className="ml-auto flex items-center pr-3 [-webkit-app-region:no-drag]">{right}</div>
       )}
     </header>
   );

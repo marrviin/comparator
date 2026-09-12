@@ -1,23 +1,23 @@
 /**
  * Persistent app shell (mirrors joybuddy's BuddyLayout): the recent sider is
  * always mounted on the left, the active route renders as a content card via
- * <Outlet/>. Shared cross-route state (error banner, sider collapse, recent
+ * <Outlet/>. Shared cross-route state (error toasts, sider collapse, recent
  * history) lives here and is handed down through the router outlet context.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom';
-import { Alert, Dropdown, Empty, Segmented } from 'antd';
+import { App as AntdApp, ConfigProvider, Dropdown, Empty, Menu, Segmented } from 'antd';
 import type { MenuProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { ConversationsProps } from '@ant-design/x';
-import { Conversations } from '@ant-design/x';
 import cx from 'classnames';
 import {
   BgColorsOutlined,
   DiffOutlined,
   DeleteOutlined,
+  EllipsisOutlined,
+  FolderOpenOutlined,
   MoonOutlined,
   QuestionCircleOutlined,
   RetweetOutlined,
@@ -33,10 +33,12 @@ import {
   removeHistory,
 } from './history';
 import { SidebarToggleSvg } from './icons';
+import { menuSkinTheme } from './menu-skin';
 import { useSettings, type Theme } from './settings';
 import { materialIconUrl, materialIconUrlByName } from './material-icons';
 import { SettingsModal } from './pages/settings/settings-modal';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { getVersion } from '@tauri-apps/api/app';
 import { isMac } from './platform';
 
 /** Sidebar fixed icons are all rendered as material-icon-theme colored svgs. */
@@ -54,6 +56,7 @@ function MaterialNavIcon({ name }: { name: string }) {
 
 /** Shared shell context handed to every route through the outlet. */
 export interface ShellContext {
+  /** Show an error toast (antd message); '' is a no-op kept for call-site compat. */
   setError: (msg: string) => void;
   siderCollapsed: boolean;
   onExpandSider: () => void;
@@ -190,6 +193,14 @@ function RecentPanel({
   const { t } = useTranslation('layout');
   const { update, theme } = useSettings();
   const now = useMinuteTick();
+  // App version for the label next to the bottom Settings entry; empty before it
+  // resolves (Tauri runtime only) so nothing renders in the browser preview.
+  const [appVersion, setAppVersion] = useState('');
+  useEffect(() => {
+    getVersion()
+      .then(setAppVersion)
+      .catch(() => setAppVersion(''));
+  }, []);
   // Dropdown menu behind the bottom "Settings" entry: a quick theme switch (Segmented pinned to
   // the row's right edge) + the settings modal entry. The Segmented's wrapper stops click
   // propagation so toggling it neither selects the menu item nor closes the dropdown.
@@ -231,8 +242,8 @@ function RecentPanel({
     },
   ];
   // Top navigation items (aligned with joybuddy's navItems). Just add to the array,
-  // and Conversations handles unified styling/interaction automatically.
-  const navItems: ConversationsProps['items'] = [
+  // and Menu handles unified styling/interaction automatically.
+  const navItems: MenuProps['items'] = [
     {
       key: 'text',
       label: t('textCompare'),
@@ -249,10 +260,31 @@ function RecentPanel({
       icon: <MaterialNavIcon name="git" />,
     },
   ];
+  // Navigate to the comparison page for a recent entry, seeding it via location state.
+  // Shared by row click and the three-dot dropdown's "Open" entry.
+  const openEntry = (entry: HistoryEntry) => {
+    navigate(
+      entry.kind === 'git'
+        ? '/git-compare'
+        : entry.kind === 'folder'
+          ? '/folder-compare'
+          : '/text-compare',
+      {
+        state:
+          entry.kind === 'git'
+            ? {
+                repo: entry.repo,
+                from: entry.left,
+                to: entry.right,
+              }
+            : { left: entry.left, right: entry.right },
+      },
+    );
+  };
   // Recent-comparison list items: key uses entryKey (kind|paths, git: repo) for unique identification;
-  // icon distinguishes file/folder by type. The delete menu hangs off the Conversations-level
-  // `menu` prop: hovering an item fades in a three-dot button on the right, click to open the menu.
-  const recentItems: ConversationsProps['items'] = recent.map((e) => {
+  // icon distinguishes file/folder by type. The delete entry is a Dropdown pinned to the row's
+  // right edge inside the label: hovering an item fades in a three-dot button, click to open the menu.
+  const recentItems: MenuProps['items'] = recent.map((e) => {
     const key = entryKey(e);
     return {
       key,
@@ -276,6 +308,36 @@ function RecentPanel({
           />
           {/* Last-opened time, hidden on hover so the three-dot menu takes over the right edge. */}
           <span className="recent-time">{relativeTime(e.ts, now, t)}</span>
+          {/* Three-dot delete trigger. Absolutely pinned to the row's right edge (the li is
+              position:relative); the built-in trigger stops propagation, so the click never
+              navigates the item. The dropdown popup renders in a portal, so its own clicks
+              can't bubble into the row either. */}
+          <Dropdown
+            trigger={['click']}
+            placement="bottomRight"
+            menu={{
+              items: [
+                {
+                  key: 'open',
+                  icon: <FolderOpenOutlined />,
+                  label: t('openRecent'),
+                },
+                {
+                  key: 'remove',
+                  danger: true,
+                  icon: <DeleteOutlined />,
+                  label: t('removeRecent'),
+                },
+              ],
+              onClick: ({ key: menuKey, domEvent }) => {
+                domEvent.stopPropagation();
+                if (menuKey === 'open') openEntry(e);
+                if (menuKey === 'remove') onRemove(key);
+              },
+            }}
+          >
+            <EllipsisOutlined className="recent-more" onClick={(e) => e.stopPropagation()} />
+          </Dropdown>
         </span>
       ),
       icon:
@@ -296,8 +358,8 @@ function RecentPanel({
   });
   const pathFor = (key: string): string =>
     key === 'folder' ? '/folder-compare' : key === 'git' ? '/git-compare' : '/text-compare';
-  // Top-nav highlight: derive the nav key from the current route so the highlight stays in sync after route changes,
-  // and the controlled activeKey ensures clicking a different item always triggers onActiveChange navigation.
+  // Top-nav highlight: derive the nav key from the current route so the highlight stays in sync
+  // after route changes; selectedKeys stays empty off-route so every click goes through onClick.
   const navActiveKey =
     location.pathname === '/folder-compare'
       ? 'folder'
@@ -319,15 +381,19 @@ function RecentPanel({
               theme-tinted wash over the system blur; the aside itself stays clear. */}
           {/* Top spacer under the native traffic lights; draggable window strip. */}
           <div className="h-12 flex-none" data-tauri-drag-region />
-          {/* Action area: comparison methods. */}
+          {/* Action area: comparison methods. Menu's onClick fires even when the clicked
+              item is already selected, so re-clicking a nav entry still navigates — same
+              semantics as the old Conversations onActiveChange. */}
           <div className="shrink-0">
-            <Conversations
-              items={navItems}
-              className="px-2 pt-2"
-              classNames={{ item: 'h-8 min-h-8' }}
-              activeKey={navActiveKey}
-              onActiveChange={(key) => navigate(pathFor(key))}
-            />
+            <ConfigProvider theme={menuSkinTheme}>
+              <Menu
+                mode="inline"
+                items={navItems}
+                className="pc-menu-skin px-2 pt-2 pb-3"
+                selectedKeys={navActiveKey ? [navActiveKey] : []}
+                onClick={({ key }) => navigate(pathFor(key))}
+              />
+            </ConfigProvider>
           </div>
           {/* Divider between the action area and the recent list. */}
           <div className="mx-2 my-1 h-px shrink-0 bg-split" />
@@ -337,52 +403,19 @@ function RecentPanel({
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={false} />
             </div>
           ) : (
-            <Conversations
-              items={recentItems}
-              className="flex-1 min-h-0 overflow-auto px-2 pb-2 pt-0"
-              classNames={{ item: 'h-8 min-h-8' }}
-              activeKey=""
-              // Hover a recent item → the built-in three-dot button fades in at its right
-              // edge; clicking it opens this dropdown (delete). The built-in trigger already
-              // stops propagation, so the click never navigates the item.
-              menu={(item) => ({
-                items: [
-                  {
-                    key: 'remove',
-                    danger: true,
-                    icon: <DeleteOutlined />,
-                    label: t('removeRecent'),
-                  },
-                ],
-                onClick: ({ key: menuKey, domEvent }) => {
-                  domEvent.stopPropagation();
-                  if (menuKey === 'remove') onRemove(item.key);
-                },
-              })}
-              onActiveChange={(key) => {
-                // Key lookup must go through entryKey — it's both the item key and the dedupe identity.
-                const entry = recent.find((e) => entryKey(e) === key);
-                if (entry) {
-                  navigate(
-                    entry.kind === 'git'
-                      ? '/git-compare'
-                      : entry.kind === 'folder'
-                        ? '/folder-compare'
-                        : '/text-compare',
-                    {
-                      state:
-                        entry.kind === 'git'
-                          ? {
-                              repo: entry.repo,
-                              from: entry.left,
-                              to: entry.right,
-                            }
-                          : { left: entry.left, right: entry.right },
-                    },
-                  );
-                }
-              }}
-            />
+            <ConfigProvider theme={menuSkinTheme}>
+              <Menu
+                mode="inline"
+                items={recentItems}
+                className="pc-menu-skin flex-1 min-h-0 overflow-auto px-2 pb-2 pt-0"
+                selectedKeys={[]}
+                onClick={({ key }) => {
+                  // Key lookup must go through entryKey — it's both the item key and the dedupe identity.
+                  const entry = recent.find((e) => entryKey(e) === key);
+                  if (entry) openEntry(entry);
+                }}
+              />
+            </ConfigProvider>
           )}
           {/* Fixed entry at the bottom (mt-auto pushes it to the bottom, always visible).
               Opens a dropdown with a quick theme switch (Segmented on the row's right) and the settings modal entry. */}
@@ -408,6 +441,10 @@ function RecentPanel({
               >
                 <SettingOutlined />
                 <span className="flex-1 text-left">{t('settings')}</span>
+                {/* App version, inside the click area at the row's right edge. */}
+                {appVersion && (
+                  <span className="shrink-0 text-[11px] text-muted select-none">v{appVersion}</span>
+                )}
               </button>
             </Dropdown>
           </div>
@@ -432,11 +469,21 @@ function RecentPanel({
  * route as a content card. Shared state is provided to child routes via context.
  */
 export function AppLayout() {
-  const [error, setError] = useState('');
+  // Error toasts come from antd's App context so they inherit the configured theme.
+  const { message } = AntdApp.useApp();
   const [recent, setRecent] = useState<HistoryEntry[]>(() => loadHistory());
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsPane, setSettingsPane] = useState('general');
+
+  // Errors surface as a transient toast instead of a banner; the '' calls
+  // scattered through the pages ("clear previous error") become a no-op.
+  const setError = useCallback(
+    (msg: string) => {
+      if (msg) message.error(msg);
+    },
+    [message],
+  );
 
   const ctx = useMemo<ShellContext>(
     () => ({
@@ -448,7 +495,7 @@ export function AppLayout() {
         setRecent(pushHistory(left, right, kind, git)),
       removeRecent: (key) => setRecent(removeHistory(key)),
     }),
-    [siderCollapsed, recent],
+    [setError, siderCollapsed, recent],
   );
 
   return (
@@ -469,7 +516,6 @@ export function AppLayout() {
         className="group/card relative flex flex-col flex-1 min-w-0 bg-surface border border-white/10 dark:border-white/10 overflow-hidden m-2 rounded-[12px] outline outline-(--color-line)"
         data-collapsed={siderCollapsed}
       >
-        {error && <Alert type="error" message={error} banner showIcon closable />}
         <Outlet context={ctx} />
       </div>
       {/* key=settingsPane: the modal's internal pane state initializes from initialPane on mount only,

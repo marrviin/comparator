@@ -9,7 +9,6 @@ import type { Locale } from 'antd/es/locale';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
 import { StyleProvider } from '@ant-design/cssinjs';
-import { XProvider } from '@ant-design/x';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { AppLayout } from './layout';
 import { isMac } from './platform';
@@ -100,11 +99,9 @@ function ThemedShell() {
         },
       }}
     >
-      <XProvider>
-        <AntdApp>
-          <RouterProvider router={router} />
-        </AntdApp>
-      </XProvider>
+      <AntdApp message={{ top: 72 }}>
+        <RouterProvider router={router} />
+      </AntdApp>
     </ConfigProvider>
   );
 }

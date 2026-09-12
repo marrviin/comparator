@@ -1,21 +1,24 @@
-/* ── Vendor overrides: antd / @ant-design/x ───────────────────────────────────
+/* ── Vendor overrides: antd ───────────────────────────────────────────────────
  * Deep selectors into antd internals must live here (they can't be expressed as
  * Tailwind classes on our own elements — we don't render those nodes). Ordered
- * per component. Blocks inside `@layer components` sit after the antd/antdx
- * cssinjs layers, so they reliably win without !important. */
+ * per component. Blocks inside `@layer components` sit after the antd cssinjs
+ * layer, so they reliably win without !important. */
 
-/* @ant-design/x Conversations chrome — aligned with joybuddy sidebar ──
- * @ant-design/x's Conversations ships a neutral-gray skin (hover background, rounded corners,
- * padding) that's disconnected from this project's theme. Here we re-hang the item's spacing/background/text
- * onto project tokens, so the height and content spacing match joybuddy's sidebar. Only the sidebar mounts this component, so the global prefix is safe. */
+/* Shared Menu skin (sidebar nav + recent lists, settings modal nav) ───────────
+ * Both UIs render antd Menu wrapped in <ConfigProvider theme={menuSkinTheme}>
+ * (src/menu-skin.ts): row geometry, hover/selected wash and radius come from
+ * those component tokens (they reference the global antd CSS vars, so dark mode
+ * follows automatically). Only rules Menu has no token for live here, all
+ * scoped under .pc-menu-skin. */
 @layer components {
   /* Last-opened time pinned to the row's right edge; hidden on hover so the
-   * built-in three-dot menu icon (which fades in on item hover) takes over.
+   * three-dot delete trigger (which fades in on item hover) takes over.
    * visibility (not display) keeps the slot reserved, so the marquee text can
-   * never slide underneath the dots. The time hides with the same 0.25s delay
-   * as the dots' delayed fade-in (no blank gap), but comes back instantly on
-   * mouse-out — transitions resolve against the destination state, so the
-   * delay only lives on the :hover rule. */
+   * never slide underneath the dots. Transitions resolve against the destination
+   * state, so each delay only lives on its own side of the hover boundary:
+   * hover-in → time hides after the same 0.25s the dots take to fade in;
+   * hover-out → dots fade out over 0.15s, and the time only comes back once
+   * they're fully gone (0.15s delay), so the two never overlap. */
   .recent-time {
     flex: none;
     padding-left: 6px;
@@ -23,19 +26,18 @@
     line-height: 1;
     color: var(--color-muted);
     white-space: nowrap;
-    transition: visibility 0s;
+    transition: visibility 0s 0.15s;
   }
-  .ant-conversations-item:hover .recent-time {
+  .pc-menu-skin .ant-menu-item:hover .recent-time {
     visibility: hidden;
     transition: visibility 0s 0.25s;
   }
-  /* Take the three-dot trigger out of flow and pin it to the item's right edge:
-   * its (invisible) inline slot would otherwise sit between the marquee and the
-   * time, keeping the time from sitting flush right. Delayed fade-in on item
-   * hover (skims across rows don't flash the dots), immediate fade-out on leave —
+  /* Take the three-dot trigger out of flow and pin it to the item's right edge
+   * (the .ant-menu-item li is position:relative). Delayed fade-in on item hover
+   * (skims across rows don't flash the dots), immediate fade-out on leave —
    * transitions resolve against the destination state, so the 0.25s delay only
    * lives on the :hover rules. */
-  .ant-conversations-item .ant-conversations-menu-icon {
+  .pc-menu-skin .recent-more {
     position: absolute;
     top: 50%;
     right: 8px;
@@ -43,62 +45,53 @@
     opacity: 0;
     transition: opacity 0.15s ease;
   }
-  .ant-conversations-item:hover .ant-conversations-menu-icon {
+  .pc-menu-skin .ant-menu-item:hover .recent-more {
     opacity: 0.6;
     transition: opacity 0.15s ease 0.25s;
   }
-  .ant-conversations-item .ant-conversations-menu-icon:hover {
+  .pc-menu-skin .recent-more:hover {
     opacity: 1;
     transition: opacity 0.15s ease;
   }
-  /* X's item row is flex with an 8px gap; the dots' zero-width wrapper div still
-   * occupies a slot, so its gap keeps the label (and the time at its right edge)
-   * ~8px left of the pinned dots. Cancel that last gap to align both right edges. */
-  .ant-conversations-item > div:has(> .ant-conversations-menu-icon) {
-    margin-right: calc(var(--ant-padding-xs, 8px) * -1);
+  /* Row geometry: rc-menu stamps `padding-left: <inlineIndent>*level` as an inline
+   * style on every inline item (24px at root level), which no stylesheet rule can
+   * beat without !important — the old Conversations rows were 8px, matching the
+   * px-2 of the sidebar's custom "settings" button, so force it back. Radius is
+   * here too: token itemBorderRadius is number-typed in antd v6 so it can't take
+   * the CSS var; use the same borderRadiusLG the old Conversations items had. */
+  .pc-menu-skin .ant-menu-item {
+    padding-inline: 8px !important;
+    border-radius: var(--ant-border-radius-lg, 8px);
   }
-  .ant-conversations-item {
-    color: var(--ant-color-text);
-    position: relative;
-    /* The component defaults to minHeight=controlHeightLG (40px), marginBlock=marginXXS (4px).
-     * The sidebar wants to be more compact: lock to 32px height; top/bottom margins are controlled by the component's classNames (see app.tsx),
-     * zeroed here to avoid stacking with classNames' my-*. */
-    min-height: 2rem;
-    height: 2rem;
-    margin-block: 0;
-    /* Horizontal padding locked to 8px, matching the px-2 of the sidebar's "onboarding tour / settings" custom buttons,
-     * ensuring all three menu icons' left edges sit on the same vertical line. */
-    padding-inline: 8px;
-    /* After locking a fixed height, flex centering must be explicitly restored so the icon and text align vertically within the 32px row. */
+  /* Row pitch: the old Conversations list was a flex column with a 4px gap
+   * (paddingXXS) between rows — 36px pitch on a 32px row. Menu has no gap
+   * equivalent, so hang 4px off every row that follows another (first row stays
+   * flush with the container's pt-2, last row flush with pb-2, exactly like before). */
+  .pc-menu-skin .ant-menu-item + .ant-menu-item {
+    margin-block-start: 4px;
+  }
+  /* Icon gap for raw <img> icons (sidebar rows): the 8px icon→label gap must come
+   * from exactly one source. antd v6 stamps .ant-menu-item-icon onto raw <img>
+   * icons, so its built-in `.ant-menu-item-icon + span` margin fires on those rows
+   * in addition to the img margin — an 8px label misalignment. Neutralize it only
+   * for img icons and apply the gap on the img itself (flex:none keeps the 16px
+   * icon from being squeezed); antd icons (settings modal) keep the token gap. */
+  .pc-menu-skin .ant-menu-item > img {
+    flex: none;
+    margin-inline-end: 8px;
+  }
+  .pc-menu-skin .ant-menu-item > img.ant-menu-item-icon + span {
+    margin-inline-start: 0;
+  }
+  /* Title content: mirror the old Conversations label — a min-width-0, overflow-
+   * hidden flex box with line-height 1. This is the sizing context the marquee
+   * label (w-full min-w-0) depends on; without it long names stop scrolling. */
+  .pc-menu-skin .ant-menu-title-content {
     display: flex;
     align-items: center;
-  }
-  .ant-conversations-item .ant-conversations-icon {
-    display: flex;
-    align-items: center;
-  }
-  .ant-conversations-item .ant-conversations-label {
-    color: var(--ant-color-text);
     min-width: 0;
     overflow: hidden;
-    /* Offset the baseline sink caused by the default lineHeight, centering coaxially with the icon. */
-    display: flex;
-    align-items: center;
     line-height: 1;
-  }
-  .ant-conversations-item:hover {
-    background: var(--ant-control-item-bg-active, var(--ant-color-bg-layout));
-  }
-  .ant-conversations-item-active,
-  .ant-conversations-item-active:hover {
-    background: var(--ant-control-item-bg-active, var(--ant-color-bg-layout));
-  }
-  .ant-conversations-item-active .ant-conversations-label,
-  .ant-conversations-item-active .ant-conversations-icon {
-    color: var(--ant-color-text);
-  }
-  .ant-conversations-group-title {
-    color: var(--ant-color-text-tertiary);
   }
 }
 
@@ -285,13 +278,56 @@
    The modal panel is translucent and backdrop-blurs the app content behind it —
    the in-page equivalent of vibrancy, since the native NSVisualEffectView
    material can't apply to DOM overlays. Pairs with --pc-glass-bg in tokens.css;
-   SettingsShell's root/nav keep no background so the glass reads through. */
+   SettingsShell's root/nav keep no background so the glass reads through.
+   The glass lives on a ::before layer INSIDE the container (not on the
+   container itself): the title strip (.pc-settings-header) frosts content by
+   re-blurring with its own backdrop-filter, and a nested backdrop-filter can
+   only sample in-panel paint — with the glass on the container (the strip's
+   backdrop root) the strip would never see it, forcing either a tint band at
+   rest or an unwhitened, see-through frost over scrolled rows. As an in-panel
+   layer the ::before IS part of the strip's backdrop sample, so the strip's
+   frost reads exactly like the glass. z-index:-1 keeps it behind the shell
+   content; isolation keeps it from sinking behind ancestors outside the panel.
+   The open animation must therefore stay transform-free (transitionName
+   'pc-modal-fade', motion CSS below): a blur layer inside a transformed or
+   fading subtree goes dormant for the animation's duration and the blur pops
+   in afterwards — the zoom motion showed exactly that flash on open. */
 .pc-glass-modal .ant-modal-container {
+  isolation: isolate;
+}
+.pc-glass-modal .ant-modal-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--pc-glass-bg, rgba(250, 250, 250, 0.8));
   backdrop-filter: blur(28px) saturate(1.6);
   /* The prefix is required: the app runs in WKWebView (Tauri macOS), where
    * backdrop-filter is only supported with -webkit-. */
   -webkit-backdrop-filter: blur(28px) saturate(1.6); /* stylelint-disable-line property-no-vendor-prefix */
+}
+
+/* Pure-fade open/close motion for the glass modal (transitionName on the
+ * settings Modal): replaces antd's zoom, whose transform animation made the
+ * ::before glass dormant and flashed on open. Values mirror antd's motion
+ * tokens so the feel stays consistent with the rest of the UI. */
+.pc-modal-fade-appear,
+.pc-modal-fade-enter {
+  opacity: 0;
+}
+.pc-modal-fade-appear-active,
+.pc-modal-fade-enter-active {
+  opacity: 1;
+  transition: opacity var(--ant-motion-duration-mid, 0.2s)
+    var(--ant-motion-ease-in-out, cubic-bezier(0.645, 0.045, 0.355, 1));
+}
+.pc-modal-fade-leave {
+  opacity: 1;
+}
+.pc-modal-fade-leave-active {
+  opacity: 0;
+  transition: opacity var(--ant-motion-duration-mid, 0.2s)
+    var(--ant-motion-ease-in-out, cubic-bezier(0.645, 0.045, 0.355, 1));
 }
 
 /* ── Frosted-glass dropdown menus ─────────────────────────────────────────────

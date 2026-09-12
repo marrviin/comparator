@@ -278,7 +278,6 @@ export function GitTreePane({ active }: { active: boolean }) {
             description={
               <div className="text-[13px] text-muted">
                 <div>{t('clickOrDropRepo')}</div>
-                <div className="mt-1 text-[12px]">{t('needGitRoot')}</div>
               </div>
             }
           />

@@ -1,7 +1,7 @@
 /* ── CSS Cascade Layers order (aligned with joybuddy) ──────────────────────────
- * Later layers have higher priority. antd/antdx's runtime cssinjs styles are injected
- * into the antd/antdx layers via <StyleProvider layer>; our @layer components blocks
- * come after them, so they can reliably override @ant-design/x's built-in skin.
+ * Later layers have higher priority. antd's runtime cssinjs styles are injected
+ * into the antd layer via <StyleProvider layer>; our @layer components blocks
+ * come after it, so they can reliably override antd's built-in skin.
  * utilities goes last so Tailwind atomic classes (like h-8 min-h-8) have the highest
  * priority. Unlayered rules (base.css, monaco.css, the diff-side-table and pc-tab
  * blocks) rank above ALL layers. This declaration must be the file's first @layer
@@ -11,12 +11,12 @@
  * - styles/tokens.css      — design tokens (@theme + dark overrides + dark variant)
  * - styles/base.css        — reset, vibrancy wiring, drag regions, custom @utility
  * - styles/monaco.css      — vendor overrides: Monaco editor internals
- * - styles/antd.css        — vendor overrides: antd / @ant-design/x internals
+ * - styles/antd.css        — vendor overrides: antd internals (incl. sidebar Menu skin)
  * - styles/components.css  — first-party components (marquee, header tabs)
  * JSX never hand-writes these: first-party static styling lives in JSX as Tailwind
  * utility classes; only the above (pseudo-elements, keyframes, third-party internals,
  * cross-element state selectors) stay in CSS. */
-@layer theme, antd, antdx, components, utilities;
+@layer theme, antd, components, utilities;
 
 /* Import only theme + utilities into layers (excluding preflight) -- preflight's global reset
  * would interfere with antd components' default styles; the project's own reset lives in styles/base.css. */

@@ -11,7 +11,6 @@ import { invoke } from '@tauri-apps/api/core';
 import { Card, Modal, Input, Empty, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { RetweetOutlined, SearchOutlined } from '@ant-design/icons';
-import { Welcome } from '@ant-design/x';
 import { AppHeader } from '../app-header';
 import { useShell } from '../layout';
 import { materialIconUrlByName, materialIconUrl } from '../material-icons';
@@ -31,6 +30,37 @@ function CardIcon({ name }: { name: string }) {
   );
 }
 
+/**
+ * Home hero: a local replacement for @ant-design/x's <Welcome variant="borderless">
+ * (removed along with the dependency). Clones its exact metrics: 16px gap between
+ * the 58px icon and the text column, 24px/32px semibold title, 14px/22px
+ * description, 8px between them.
+ */
+function WelcomeHero({
+  icon,
+  title,
+  description,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-4 text-[color:var(--ant-color-text,rgba(0,0,0,0.88))]">
+      <img
+        src={icon}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="h-[58px] w-[58px] object-contain select-none"
+      />
+      <div className="flex min-w-0 flex-col gap-2">
+        <div className="text-[24px] leading-8 font-semibold">{title}</div>
+        <div className="text-sm leading-[22px]">{description}</div>
+      </div>
+    </div>
+  );
+}
 
 /** Session cards; titles/descriptions are resolved via i18n at render time (titleKey/descKey). */
 const SESSIONS = [
@@ -218,12 +248,7 @@ export function HomePage() {
       <AppHeader siderCollapsed={siderCollapsed} onExpandSider={onExpandSider} bordered={false} />
       <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-7 p-4 sm:p-8">
         <div className="mb-4">
-          <Welcome
-            title="Pure Compare"
-            icon={<img src={icon} alt="" />}
-            description={t('description')}
-            variant="borderless"
-          />
+          <WelcomeHero icon={icon} title="Pure Compare" description={t('description')} />
         </div>
 
         <div className="w-full max-w-[760px] grid gap-4 justify-center grid-cols-[repeat(auto-fit,minmax(140px,1fr))]">
