@@ -11,6 +11,10 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
+/* Dark mode keys off the .pc-dark class app.tsx toggles on <html> (same trigger
+ * as the token overrides in :root.pc-dark), not prefers-color-scheme. */
+@custom-variant dark (&:where(.pc-dark, .pc-dark *));
+
 /* All design tokens are registered uniformly into @theme, and Tailwind generates the
    corresponding atomic classes (palette -> `bg-*` / `text-*` / `border-*`, fonts -> `font-mono`).
    JSX always uses semantic atomic classes (like `bg-panel`, `text-muted`, `border-line`, `bg-add-bg`),
@@ -95,6 +99,27 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--color-fg);
   background: var(--color-surface);
+}
+
+/* ── macOS vibrancy ────────────────────────────────────────────────────────────
+   The native window carries an NSVisualEffectView (tauri.conf.json windowEffects,
+   material "sidebar"); html goes transparent so the system blur shows through,
+   and the shell root paints a theme-tinted translucent wash on top of it so text
+   contrast holds even when the in-app theme differs from the system appearance.
+   Gated by html.pc-vibrancy (set in app.tsx via src/platform.ts isMac); other
+   platforms keep the opaque bg-panel shell. Tuning: raise/lower the alpha to make
+   the wallpaper bleed more/less subtle. */
+html.pc-vibrancy {
+  background: transparent;
+}
+:root {
+  --pc-vibrancy-wash: rgba(255, 255, 255, 0.3);
+}
+.pc-dark {
+  --pc-vibrancy-wash: rgba(24, 24, 26, 0.9);
+}
+.pc-vibrancy-wash {
+  background: var(--pc-vibrancy-wash);
 }
 
 html,
@@ -633,7 +658,7 @@ body {
    gap between adjacent tabs and in the 48px header. */
 .pc-tab + .pc-tab::before {
   left: -4.5px;
-  bottom: 16px;
+  bottom: 12px;
   width: 1px;
   height: 16px;
   background: var(--color-line);
@@ -669,15 +694,20 @@ body {
   background: radial-gradient(circle 10px at 100% 0, transparent 9.5px, var(--color-panel) 10px);
 }
 
-/* Close button fades in when the tab is hovered or active (Chrome behavior). */
+/* Close button fades in when the tab is hovered or active (Chrome behavior).
+   Fade the glyph's color rather than the button's opacity: an opacity
+   transition layerizes the button in WKWebView and re-rasterizes it at a
+   snapped device-pixel position, so the × visibly hops a fraction of a pixel
+   on hover (tab widths are text-dependent and its x lands on fractional
+   pixels). Fading currentColor paints the glyph in place every frame. */
 .pc-tab .pc-tab-close {
-  opacity: 0;
-  transition: opacity 0.15s;
+  color: transparent;
+  transition: color 0.15s;
 }
 
 .pc-tab:hover .pc-tab-close,
 .pc-tab.is-active .pc-tab-close {
-  opacity: 1;
+  color: inherit;
 }
 
 /* Inactive-tab hover pill: 32px tall, vertically centered in the 48px header
@@ -686,7 +716,7 @@ body {
    center — the pill's center — in every state. */
 .pc-tab-hover {
   position: absolute;
-  inset: 8px 0;
+  inset: 4px 0;
   border-radius: 8px;
   background: var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.08));
   opacity: 0;
@@ -708,7 +738,7 @@ body {
    merging into the content area via the concave flares below. */
 .pc-tab-bg {
   position: absolute;
-  inset: 8px 0 0;
+  inset: 4px 0 0;
   border-radius: 10px 10px 0 0;
   background: var(--color-panel);
   z-index: -1;

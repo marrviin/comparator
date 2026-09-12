@@ -210,7 +210,6 @@ export function GitTreePane({ active }: { active: boolean }) {
         </span>
       </Tooltip>
       <Select
-        size="small"
         showSearch
         value={value ?? undefined}
         options={refOptions}

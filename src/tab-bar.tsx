@@ -74,7 +74,7 @@ export function TabBar({
       // into a right angle. flex-1 stretches the strip past the last tab so
       // the blank area stays a window drag region (data-tauri-drag-region
       // fires on this div itself).
-      className="flex flex-1 items-stretch gap-x-2 h-full min-w-0 px-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="flex flex-1 items-stretch gap-x-2 h-full min-w-0 px-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       data-tauri-drag-region
     >
       {tabs.map((tab) => {
@@ -94,7 +94,7 @@ export function TabBar({
                 // Tab boxes span the full header height and center their content,
                 // so text sits at the header's vertical center in every state —
                 // the center of the hover pill and of the active tab alike. The
-                // active background (.pc-tab-bg, 40px) and hover pill (32px,
+                // active background (.pc-tab-bg, 36px) and hover pill (32px,
                 // centered) are painted by layers behind the content. Right
                 // padding follows closability (the × keeps its space even while
                 // faded out), so tabs never resize when activated.

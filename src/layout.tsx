@@ -36,6 +36,7 @@ import { useSettings, type Theme } from './settings';
 import { materialIconUrl, materialIconUrlByName } from './material-icons';
 import { SettingsModal } from './pages/settings/settings-modal';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { isMac } from './platform';
 
 /** Sidebar fixed icons are all rendered as material-icon-theme colored svgs. */
 function MaterialNavIcon({ name }: { name: string }) {
@@ -306,9 +307,11 @@ function RecentPanel({
       style={{ width: collapsed ? 0 : 240 }}
     >
       <div className="h-full w-60 overflow-hidden">
-        <aside className="h-full w-60 flex flex-col px-0 pb-4 bg-panel overflow-y-auto">
+        <aside className="h-full w-60 flex flex-col px-0 pb-4 overflow-y-auto">
+          {/* macOS vibrancy: no bg here — the window base (AppLayout root) paints the
+              theme-tinted wash over the system blur; the aside itself stays clear. */}
           {/* Top spacer under the native traffic lights; draggable window strip. */}
-          <div className="h-10 flex-none" data-tauri-drag-region />
+          <div className="h-12 flex-none" data-tauri-drag-region />
           {/* Action area: comparison methods. */}
           <div className="shrink-0">
             <Conversations
@@ -407,7 +410,7 @@ function RecentPanel({
         <button
           type="button"
           aria-label={t('collapseSider')}
-          className="text-[14px] absolute top-[11px] left-51 z-20 flex items-center justify-center w-7 h-7 rounded-md text-muted bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
+          className="text-[14px] absolute top-[15px] left-51 z-20 flex items-center justify-center w-7 h-7 rounded-md text-muted bg-transparent border-0 cursor-pointer transition-colors hover:bg-hover [-webkit-app-region:no-drag]"
           onClick={onToggle}
         >
           <SidebarToggleSvg />
@@ -442,7 +445,9 @@ export function AppLayout() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-panel">
+    // macOS vibrancy: the shell root paints the theme-tinted translucent wash over the
+    // system blur material; non-mac keeps the opaque bg-panel shell.
+    <div className={`flex h-screen overflow-hidden ${isMac ? 'pc-vibrancy-wash' : 'bg-panel'}`}>
       <RecentPanel
         recent={recent}
         collapsed={siderCollapsed}
@@ -454,7 +459,7 @@ export function AppLayout() {
         onRemove={(key) => setRecent(removeHistory(key))}
       />
       <div
-        className="group/card relative flex flex-col flex-1 min-w-0 bg-surface border border-line overflow-hidden"
+        className="group/card relative flex flex-col flex-1 min-w-0 bg-surface border border-white dark:border-white/10 overflow-hidden m-2 rounded-[12px] outline outline-(--color-line)"
         data-collapsed={siderCollapsed}
       >
         {error && <Alert type="error" message={error} banner showIcon closable />}

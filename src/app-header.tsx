@@ -47,7 +47,7 @@ export function AppHeader({
   return (
     <header
       className={cx(
-        'flex items-center h-12 flex-none',
+        'flex items-center h-10 flex-none',
         tabs ? 'bg-panel-2' : bordered && 'border-b border-line',
       )}
       data-tauri-drag-region

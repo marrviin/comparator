@@ -12,6 +12,7 @@ import { StyleProvider } from '@ant-design/cssinjs';
 import { XProvider } from '@ant-design/x';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { AppLayout } from './layout';
+import { isMac } from './platform';
 import { SettingsProvider, useSettings } from './settings';
 import type { Lang } from './i18n';
 import { HomePage } from './pages/home';
@@ -60,6 +61,12 @@ function ThemedShell() {
     document.documentElement.classList.toggle('pc-dark', isDark);
   }, [isDark]);
 
+  // macOS vibrancy gate (never toggles): styles.css keys the transparent root +
+  // theme-tinted wash off html.pc-vibrancy; other platforms stay opaque.
+  useEffect(() => {
+    document.documentElement.classList.toggle('pc-vibrancy', isMac);
+  }, []);
+
   return (
     <ConfigProvider
       locale={ANTD_LOCALES[lang]}
@@ -76,7 +83,9 @@ function ThemedShell() {
           // Softer strokes, rounder surfaces, light desktop background / container background
           // (dark equivalents follow the same softer-than-default relationship).
           colorBorder: isDark ? '#3a3a3c' : '#e8e8ea',
-          borderRadius: 8,
+          borderRadius: 12,
+          borderRadiusSM: 8,
+          borderRadiusXS: 6,
           colorBgLayout: isDark ? '#161617' : '#f2f2f2',
           colorBgContainer: isDark ? '#1d1d1f' : '#fafafa',
           controlItemBgActive: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
