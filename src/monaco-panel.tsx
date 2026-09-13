@@ -170,8 +170,8 @@ function languageFor(path: string | undefined): string {
  * values from the project's light/dark palettes (see styles.css).
  */
 let themesDefined = false;
-const THEME_NAME = 'pure-compare-light';
-const THEME_NAME_DARK = 'pure-compare-dark';
+const THEME_NAME = 'comparator-light';
+const THEME_NAME_DARK = 'comparator-dark';
 function ensureTheme() {
   if (themesDefined) return;
   monaco.editor.defineTheme(THEME_NAME, {

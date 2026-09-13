@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Changelog — Comparator</title>
+    <meta name="description" content="Comparator release notes and version history." />
+    <link rel="canonical" href="https://marrviin.github.io/comparator/changelog.html" />
+    <link
+      rel="alternate"
+      hreflang="en"
+      href="https://marrviin.github.io/comparator/changelog.html"
+    />
+    <link
+      rel="alternate"
+      hreflang="zh-CN"
+      href="https://marrviin.github.io/comparator/changelog.zh.html"
+    />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://marrviin.github.io/comparator/changelog.html"
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Comparator" />
+    <meta property="og:title" content="Comparator Changelog" />
+    <meta property="og:description" content="Comparator release notes and version history." />
+    <meta property="og:url" content="https://marrviin.github.io/comparator/changelog.html" />
+    <link rel="icon" type="image/png" href="./images/app-icon.png" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <nav>
+      <div class="container nav-inner">
+        <a class="brand" href="./index.html"
+          ><img class="brand-mark" src="./images/app-icon.png" alt="" />Comparator</a
+        >
+        <div class="nav-right">
+          <div class="nav-links">
+            <a href="./index.html">Home</a>
+            <a href="./docs.html">Docs</a>
+            <a href="./changelog.html" class="active">Changelog</a>
+            <a href="./index.html#download">Download</a>
+            <span class="lang-switch">
+              <a href="./changelog.html" class="active">EN</a>
+              <a href="./changelog.zh.html">中文</a>
+            </span>
+          </div>
+          <a class="nav-gh" href="https://github.com/marrviin/comparator" aria-label="GitHub">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+              />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="page">
+      <div class="container">
+        <div class="doc-grid">
+          <nav class="doc-toc" aria-label="Releases">
+            <a href="#v0-2-0">v0.2.0</a>
+            <a href="#v0-1-0">v0.1.0</a>
+          </nav>
+
+          <div>
+            <div class="page-head">
+              <span class="kicker">Changelog</span>
+              <h1>Changelog</h1>
+              <p class="page-sub">Release notes and version history.</p>
+            </div>
+
+            <div class="doc-body">
+              <div class="release" id="v0-2-0">
+                <div class="release-head">
+                  <h2>v0.2.0</h2>
+                  <span class="release-tag">Latest</span>
+                  <span class="release-date">2026-09-12</span>
+                </div>
+                <h3>Features</h3>
+                <ul>
+                  <li>Git: pick the working tree on the left side of a diff</li>
+                  <li>Chrome-style header tabs across text / folder / Git compare</li>
+                  <li>Recent list: dedupe, hover-to-remove, and last-opened time</li>
+                  <li>Dark theme with a quick switch and a new About tab in settings</li>
+                  <li>macOS vibrancy sidebar tinted with the active theme</li>
+                  <li>Unified diff header buttons across all three modes</li>
+                </ul>
+                <h3>Fixes</h3>
+                <ul>
+                  <li>Polished compare toolbar, tree expansion, and cursor styles</li>
+                  <li>Git diff from..to when both refs are picked</li>
+                </ul>
+                <h3>Internal</h3>
+                <ul>
+                  <li>Standardized styling with split token files and a glass settings modal</li>
+                  <li>Replaced @ant-design/x with a shared menu skin and message toasts</li>
+                </ul>
+                <p class="rel-more">
+                  <a href="https://github.com/marrviin/comparator/compare/v0.1.0...v0.2.0"
+                    >Full changelog on GitHub →</a
+                  >
+                </p>
+              </div>
+
+              <div class="release" id="v0-1-0">
+                <div class="release-head">
+                  <h2>v0.1.0</h2>
+                  <span class="release-date">2026-09-03</span>
+                </div>
+                <h3>Initial release</h3>
+                <ul>
+                  <li>
+                    Text, folder, and Git compare in one native app (Tauri 2 + React + Monaco)
+                  </li>
+                  <li>Side-by-side diff with syntax highlighting and two-way editing</li>
+                  <li>
+                    Smart encoding detection (UTF-8/16, GBK), binary guard, large-file protection
+                  </li>
+                  <li>
+                    Native installers for macOS (.dmg), Windows (.msi / .exe), and Linux (.AppImage
+                    / .deb)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="foot-links">
+          <a href="https://github.com/marrviin/comparator">GitHub</a>
+          <a href="https://github.com/marrviin/comparator/releases">Releases</a>
+          <a href="https://github.com/marrviin/comparator/blob/main/LICENSE">MIT License</a>
+          <a href="./changelog.zh.html">简体中文</a>
+        </div>
+        <p>© Comparator contributors</p>
+      </div>
+    </footer>
+  </body>
+</html>

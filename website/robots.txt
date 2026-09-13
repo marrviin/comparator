@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://marrviin.github.io/comparator/sitemap.xml

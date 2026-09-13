@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Comparator — Free Diff Tool: Text, Folder & Git Compare</title>
+    <meta
+      name="description"
+      content="Free, open-source diff tool for macOS, Windows, and Linux. Text, folder, and Git compare in one lightweight native app — a modern Beyond Compare alternative."
+    />
+    <link rel="canonical" href="https://marrviin.github.io/comparator/" />
+    <link rel="alternate" hreflang="en" href="https://marrviin.github.io/comparator/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://marrviin.github.io/comparator/zh.html" />
+    <link rel="alternate" hreflang="x-default" href="https://marrviin.github.io/comparator/" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Comparator" />
+    <meta property="og:title" content="Comparator — Free Diff Tool: Text, Folder & Git Compare" />
+    <meta
+      property="og:description"
+      content="Free, open-source diff tool for macOS, Windows, and Linux. Text, folder, and Git compare in one lightweight native app."
+    />
+    <meta property="og:url" content="https://marrviin.github.io/comparator/" />
+    <meta
+      property="og:image"
+      content="https://marrviin.github.io/comparator/images/home-en.png"
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Comparator — Free Diff Tool: Text, Folder & Git Compare"
+    />
+    <meta
+      name="twitter:description"
+      content="Free, open-source diff tool for macOS, Windows, and Linux. Text, folder, and Git compare in one lightweight native app."
+    />
+    <meta
+      name="twitter:image"
+      content="https://marrviin.github.io/comparator/images/home-en.png"
+    />
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Comparator",
+        "url": "https://marrviin.github.io/comparator/",
+        "downloadUrl": "https://github.com/marrviin/comparator/releases/latest",
+        "operatingSystem": "macOS, Windows, Linux",
+        "applicationCategory": "DeveloperApplication",
+        "softwareVersion": "0.2.0",
+        "datePublished": "2026-09-03",
+        "dateModified": "2026-09-12",
+        "description": "Free, open-source diff tool for macOS, Windows, and Linux. Text, folder, and Git compare in one lightweight native app built with Tauri and Monaco.",
+        "license": "https://github.com/marrviin/comparator/blob/main/LICENSE",
+        "author": {
+          "@type": "Organization",
+          "name": "Comparator contributors",
+          "url": "https://github.com/marrviin/comparator"
+        },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "screenshot": "https://marrviin.github.io/comparator/images/home-en.png",
+        "keywords": "diff tool, text compare, folder compare, git compare, file comparison, beyond compare alternative, winmerge alternative, meld alternative",
+        "featureList": [
+          "Text compare with two-way editing and syntax highlighting",
+          "Folder compare with recursive directory diff",
+          "Git compare between any two refs with rename detection",
+          "Automatic encoding detection (UTF-8/16, GBK)",
+          "Native Tauri app for macOS, Windows, and Linux"
+        ]
+      }
+    </script>
+    <link rel="icon" type="image/png" href="./images/app-icon.png" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <nav>
+      <div class="container nav-inner">
+        <a class="brand" href="./index.html"
+          ><img class="brand-mark" src="./images/app-icon.png" alt="" />Comparator</a
+        >
+        <div class="nav-right">
+          <div class="nav-links">
+            <a href="./index.html" class="active">Home</a>
+            <a href="./docs.html">Docs</a>
+            <a href="./changelog.html">Changelog</a>
+            <a href="#download">Download</a>
+            <span class="lang-switch">
+              <a href="./index.html" class="active">EN</a>
+              <a href="./zh.html">中文</a>
+            </span>
+          </div>
+          <a class="nav-gh" href="https://github.com/marrviin/comparator" aria-label="GitHub">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+              />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="hero-badge"><span class="dot"></span> v0.2.0 · MIT · Open source</span>
+          <h1>Every diff, precisely.</h1>
+          <p class="tagline">
+            A free, native diff tool for text, folders, and Git — fast, lightweight, and open
+            source. Built with Tauri and Monaco.
+          </p>
+          <div class="cta">
+            <a
+              class="btn btn-primary"
+              href="https://github.com/marrviin/comparator/releases/latest"
+              >Download</a
+            >
+            <a class="btn btn-ghost" href="https://github.com/marrviin/comparator">
+              <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+                />
+              </svg>
+              GitHub
+            </a>
+          </div>
+          <p class="hero-meta">macOS · Windows · Linux — free, no account, no telemetry</p>
+        </div>
+
+        <div class="hero-shot">
+          <div class="window-frame">
+            <img
+              src="./images/home-en.png"
+              alt="Comparator main window — side-by-side text diff on macOS"
+            />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="kicker">Features</span>
+          <h2>Three diff engines, one workspace</h2>
+          <p class="section-sub">Text, folders, and Git — switch modes without leaving the app.</p>
+        </div>
+        <div class="modes">
+          <div class="mode-card reveal">
+            <span class="num">01</span>
+            <h3>Text compare</h3>
+            <p>
+              Line-by-line diff with two-way editing. Powered by Monaco — the editor behind VS Code.
+            </p>
+            <div class="viz" aria-hidden="true">
+              <div class="viz-box">
+                <div class="viz-row">
+                  <span class="bar bar-del"></span><span class="bar b-right bar-add"></span>
+                </div>
+                <div class="viz-row">
+                  <span class="bar" style="width: 70%"></span
+                  ><span class="bar b-right" style="width: 70%"></span>
+                </div>
+                <div class="viz-row">
+                  <span class="bar" style="width: 38%"></span
+                  ><span class="bar b-right bar-add2"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mode-card reveal">
+            <span class="num">02</span>
+            <h3>Folder compare</h3>
+            <p>Recursive directory diff — added, modified, and deleted files at a glance.</p>
+            <div class="viz" aria-hidden="true">
+              <div class="viz-box">
+                <div class="viz-row">
+                  <span class="bar" style="width: 46%"></span><span class="st m">M</span>
+                </div>
+                <div class="viz-row">
+                  <span class="bar" style="width: 60%"></span><span class="st a">A</span>
+                </div>
+                <div class="viz-row">
+                  <span class="bar" style="width: 34%"></span><span class="st d">D</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mode-card reveal">
+            <span class="num">03</span>
+            <h3>Git compare</h3>
+            <p>
+              Diff any two refs — including the working tree. Rename detection and single-file
+              checkout included.
+            </p>
+            <div class="viz" aria-hidden="true">
+              <div class="viz-box">
+                <svg viewBox="0 0 280 64" fill="none" style="width: 100%; height: auto">
+                  <path
+                    class="flow"
+                    d="M10 32h260"
+                    stroke="rgba(255,255,255,.14)"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M62 32c0-16 20-16 20-16h112"
+                    stroke="rgba(255,255,255,.24)"
+                    stroke-width="2"
+                  />
+                  <circle cx="30" cy="32" r="4.5" fill="#a1a1aa" />
+                  <circle cx="62" cy="32" r="4.5" fill="#a1a1aa" />
+                  <circle class="node" cx="82" cy="16" r="4.5" fill="#818cf8" />
+                  <circle
+                    class="node"
+                    cx="126"
+                    cy="16"
+                    r="4.5"
+                    fill="#818cf8"
+                    style="animation-delay: 0.9s"
+                  />
+                  <circle
+                    class="node"
+                    cx="170"
+                    cy="16"
+                    r="4.5"
+                    fill="#818cf8"
+                    style="animation-delay: 1.8s"
+                  />
+                  <circle cx="222" cy="32" r="4.5" fill="#a1a1aa" />
+                  <text x="76" y="8" fill="#818cf8" font-size="9" font-family="monospace">
+                    feature/*
+                  </text>
+                  <text x="16" y="52" fill="#71717a" font-size="9" font-family="monospace">
+                    main
+                  </text>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="details reveal">
+          <div class="detail">
+            <h3>Smart encoding</h3>
+            <p>UTF-8/16, GBK, and binary detection with a large-file guard.</p>
+          </div>
+          <div class="detail">
+            <h3>Native &amp; fast</h3>
+            <p>Tauri, not Electron. Small binary, instant startup, low memory.</p>
+          </div>
+          <div class="detail">
+            <h3>Safe by default</h3>
+            <p>Live file-change watching, unsaved-changes guard, ignore rules.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenshots">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="kicker">Screenshots</span>
+          <h2>Interface overview</h2>
+        </div>
+        <div class="carousel reveal" aria-label="Screenshots">
+          <div class="car-viewport">
+            <div class="car-track">
+              <figure class="car-slide">
+                <img
+                  src="./images/text-en.png"
+                  alt="Text compare view — side-by-side diff with syntax highlighting"
+                />
+                <figcaption class="car-caption">
+                  <b>Text compare</b> — side-by-side diff with syntax highlighting
+                </figcaption>
+              </figure>
+              <figure class="car-slide">
+                <img
+                  src="./images/folder-tree-en.png"
+                  alt="Folder compare tree — added, modified, and deleted files marked"
+                  loading="lazy"
+                />
+                <figcaption class="car-caption">
+                  <b>Folder compare</b> — added, modified, deleted
+                </figcaption>
+              </figure>
+              <figure class="car-slide">
+                <img
+                  src="./images/git-tree-en.png"
+                  alt="Git compare — diff between two branches with changed-file list"
+                  loading="lazy"
+                />
+                <figcaption class="car-caption">
+                  <b>Git compare</b> — any two refs, working tree included
+                </figcaption>
+              </figure>
+              <figure class="car-slide">
+                <img
+                  src="./images/folder-file-en.png"
+                  alt="Line-by-line file diff inside a folder comparison"
+                  loading="lazy"
+                />
+                <figcaption class="car-caption">
+                  <b>File diff</b> — drill into any changed file
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+        <div class="car-controls">
+          <button class="car-btn car-prev" type="button" aria-label="Previous">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <div class="car-dots">
+            <button class="car-dot on" type="button" aria-label="Slide 1"></button>
+            <button class="car-dot" type="button" aria-label="Slide 2"></button>
+            <button class="car-dot" type="button" aria-label="Slide 3"></button>
+            <button class="car-dot" type="button" aria-label="Slide 4"></button>
+          </div>
+          <button class="car-btn car-next" type="button" aria-label="Next">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="alternatives">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="kicker">Positioning</span>
+          <h2>A free, open-source diff tool</h2>
+          <p class="section-sub">
+            Beyond Compare, WinMerge, and Meld are mature, capable tools. Comparator takes its own
+            angle: one lightweight, open-source app for text, folder, and Git compare.
+          </p>
+        </div>
+        <div class="details reveal">
+          <div class="detail">
+            <h3>Free &amp; open source</h3>
+            <p>
+              MIT-licensed and free for personal and commercial use alike — no trial limits, no
+              license keys, the full feature set from the first launch.
+            </p>
+          </div>
+          <div class="detail">
+            <h3>One app, three modes</h3>
+            <p>
+              Text, folder, and Git compare share the same workspace — tabs, history, and encoding
+              handling included, so comparisons stay in one place.
+            </p>
+          </div>
+          <div class="detail">
+            <h3>Lightweight by design</h3>
+            <p>
+              Built with Tauri: a small download, instant startup, and low memory use, with VS
+              Code-grade diffing from the Monaco editor.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="kicker">Download</span>
+          <h2>Download &amp; install</h2>
+        </div>
+        <div class="dl-grid">
+          <a class="dl-card reveal" href="https://github.com/marrviin/comparator/releases/latest">
+            <h3>
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zm3.378-3.066c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.56-1.702"
+                />
+              </svg>
+              macOS
+            </h3>
+            <p>.dmg — Apple Silicon + Intel</p>
+            <span class="get">Download →</span>
+          </a>
+          <a class="dl-card reveal" href="https://github.com/marrviin/comparator/releases/latest">
+            <h3>
+              <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M0 3.449 9.75 2.1v9.451H0Zm10.949-1.36L24 0v11.4H10.949ZM0 12.6h9.75v9.451L0 20.699Zm10.949 0H24V24l-13.051-1.851Z"
+                />
+              </svg>
+              Windows
+            </h3>
+            <p>.msi / .exe</p>
+            <span class="get">Download →</span>
+          </a>
+          <a class="dl-card reveal" href="https://github.com/marrviin/comparator/releases/latest">
+            <h3>
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 1.8c-2.7 0-4.2 2.2-4.2 4.8 0 1.6.3 2.5-.3 4-.8 2-2.2 3.7-2.6 5.7-.2 1 .1 1.9.8 2.3-.2.4-.3.9-.2 1.3.2.5.7.9 1.4 1.1.5 1.2 2.5 1.6 5.1 1.6s4.6-.4 5.1-1.6c.7-.2 1.2-.6 1.4-1.1.1-.4 0-.9-.2-1.3.7-.4 1-1.3.8-2.3-.4-2-1.8-3.7-2.6-5.7-.6-1.5-.3-2.4-.3-4 0-2.6-1.5-4.8-4.2-4.8Z"
+                />
+                <ellipse cx="12" cy="15.5" rx="3.4" ry="3.8" fill="var(--surface)" />
+                <circle cx="10.7" cy="7.3" r="0.75" fill="var(--surface)" />
+                <circle cx="13.3" cy="7.3" r="0.75" fill="var(--surface)" />
+                <path
+                  fill="#fbbf24"
+                  d="m12 8.6 1.3 1.5c.25.3.05.75-.35.75h-1.9c-.4 0-.6-.45-.35-.75Z"
+                />
+                <path
+                  fill="#fbbf24"
+                  d="M8.6 19.4c-1 .25-1.7.65-1.7 1.1 0 .75 2.3 1.3 5.1 1.3s5.1-.55 5.1-1.3c0-.45-.7-.85-1.7-1.1l-3.4.7Z"
+                />
+              </svg>
+              Linux
+            </h3>
+            <p>.AppImage / .deb</p>
+            <span class="get">Download →</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="container">
+        <div class="foot-links">
+          <a href="https://github.com/marrviin/comparator">GitHub</a>
+          <a href="https://github.com/marrviin/comparator/releases">Releases</a>
+          <a href="https://github.com/marrviin/comparator/blob/main/LICENSE">MIT License</a>
+          <a href="./zh.html">简体中文</a>
+        </div>
+        <p>© Comparator contributors</p>
+      </div>
+    </footer>
+
+    <script>
+      // Reveal-on-scroll
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const reveals = document.querySelectorAll('.reveal');
+      if (reduced) {
+        reveals.forEach((el) => el.classList.add('in'));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('in');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { threshold: 0.12 },
+        );
+        reveals.forEach((el) => io.observe(el));
+      }
+
+      // Screenshot carousel — auto-plays, pauses on hover, resets after manual nav
+      const car = document.querySelector('.carousel');
+      if (car) {
+        const track = car.querySelector('.car-track');
+        const slides = [...track.children];
+        const dots = [...document.querySelectorAll('.car-dot')];
+        let idx = 0;
+        let timer = null;
+        const go = (n) => {
+          idx = (n + slides.length) % slides.length;
+          track.style.transform = `translateX(-${idx * 100}%)`;
+          dots.forEach((d, k) => d.classList.toggle('on', k === idx));
+        };
+        const stop = () => {
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
+        };
+        const play = () => {
+          stop();
+          if (!reduced) timer = setInterval(() => go(idx + 1), 4000);
+        };
+        document.querySelector('.car-prev').addEventListener('click', () => {
+          go(idx - 1);
+          play();
+        });
+        document.querySelector('.car-next').addEventListener('click', () => {
+          go(idx + 1);
+          play();
+        });
+        dots.forEach((d, k) =>
+          d.addEventListener('click', () => {
+            go(k);
+            play();
+          }),
+        );
+        car.addEventListener('mouseenter', stop);
+        car.addEventListener('mouseleave', play);
+        play();
+      }
+    </script>
+  </body>
+</html>

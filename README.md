@@ -1,6 +1,6 @@
 <div align="center">
 
-# Pure Compare
+# Comparator
 
 **A fast, cross-platform diff tool for text, folders, and Git — powered by Tauri & Monaco.**
 
@@ -9,22 +9,24 @@ A lightweight, native desktop alternative to Beyond Compare and Meld — free an
 
 **English** · [简体中文](./README.zh-CN.md)
 
-[![CI](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/marrviin/pure-compare?include_prereleases&sort=semver)](https://github.com/marrviin/pure-compare/releases)
-[![Downloads](https://img.shields.io/github/downloads/marrviin/pure-compare/total)](https://github.com/marrviin/pure-compare/releases)
+🌐 **Website**: [https://marrviin.github.io/comparator/](https://marrviin.github.io/comparator/)
+
+[![CI](https://github.com/marrviin/comparator/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/comparator/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/marrviin/comparator?include_prereleases&sort=semver)](https://github.com/marrviin/comparator/releases)
+[![Downloads](https://img.shields.io/github/downloads/marrviin/comparator/total)](https://github.com/marrviin/comparator/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 
-[**⬇️ Download**](https://github.com/marrviin/pure-compare/releases/latest) ·
+[**⬇️ Download**](https://github.com/marrviin/comparator/releases/latest) ·
 [Features](#features) ·
 [Screenshots](#screenshots) ·
 [Build from source](#build-from-source)
 
-![Pure Compare screenshot](./docs/images/home-en.png)
+![Comparator screenshot](./docs/images/home-en.png)
 
 </div>
 
-## Why Pure Compare?
+## Why Comparator?
 
 - ⚡ **Native & lightweight** — built on Tauri (Rust), not Electron. Small binary, low memory, instant startup.
 - 🎨 **IDE-grade diff** — the Monaco editor (the engine behind VS Code) drives syntax highlighting and large-file handling.
@@ -50,7 +52,7 @@ A lightweight, native desktop alternative to Beyond Compare and Meld — free an
 
 ## Download
 
-Grab the installer for your platform from the [**latest release**](https://github.com/marrviin/pure-compare/releases/latest):
+Grab the installer for your platform from the [**latest release**](https://github.com/marrviin/comparator/releases/latest):
 
 | Platform | File |
 | --- | --- |
@@ -95,7 +97,7 @@ Assets are generated from the npm package by `scripts/sync-material-icons.mjs` d
 
 ## License
 
-[MIT](LICENSE) © Pure Compare contributors
+[MIT](LICENSE) © Comparator contributors
 
 ---
 
@@ -105,6 +107,6 @@ Assets are generated from the npm package by `scripts/sync-material-icons.mjs` d
 
 <br/>
 
-⭐ If Pure Compare is useful to you, consider starring the repo — it helps others find it.
+⭐ If Comparator is useful to you, consider starring the repo — it helps others find it.
 
 </div>

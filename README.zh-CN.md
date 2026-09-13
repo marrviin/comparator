@@ -1,6 +1,6 @@
 <div align="center">
 
-# Pure Compare
+# Comparator
 
 **快速、跨平台的差异对比工具 —— 文本、文件夹、Git 三合一，基于 Tauri 与 Monaco。**
 
@@ -9,22 +9,24 @@ Beyond Compare、Meld 的轻量原生替代品 —— 免费且开源。
 
 [English](./README.md) · **简体中文**
 
-[![CI](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/pure-compare/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/marrviin/pure-compare?include_prereleases&sort=semver)](https://github.com/marrviin/pure-compare/releases)
-[![Downloads](https://img.shields.io/github/downloads/marrviin/pure-compare/total)](https://github.com/marrviin/pure-compare/releases)
+🌐 **官网**：[https://marrviin.github.io/comparator/zh.html](https://marrviin.github.io/comparator/zh.html)
+
+[![CI](https://github.com/marrviin/comparator/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/comparator/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/marrviin/comparator?include_prereleases&sort=semver)](https://github.com/marrviin/comparator/releases)
+[![Downloads](https://img.shields.io/github/downloads/marrviin/comparator/total)](https://github.com/marrviin/comparator/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 
-[**⬇️ 下载**](https://github.com/marrviin/pure-compare/releases/latest) ·
+[**⬇️ 下载**](https://github.com/marrviin/comparator/releases/latest) ·
 [功能](#功能) ·
 [截图](#截图) ·
 [从源码构建](#从源码构建)
 
-![Pure Compare 截图](./docs/images/home-zh.png)
+![Comparator 截图](./docs/images/home-zh.png)
 
 </div>
 
-## 为什么选择 Pure Compare？
+## 为什么选择 Comparator？
 
 - ⚡ **原生轻量** —— 基于 Tauri（Rust）而非 Electron。体积小、占用低、秒开。
 - 🎨 **IDE 级 diff** —— 由 Monaco 编辑器（VS Code 的内核）驱动语言高亮与大文件处理。
@@ -50,7 +52,7 @@ Beyond Compare、Meld 的轻量原生替代品 —— 免费且开源。
 
 ## 下载
 
-从 [**最新 Release**](https://github.com/marrviin/pure-compare/releases/latest) 获取对应平台的安装包：
+从 [**最新 Release**](https://github.com/marrviin/comparator/releases/latest) 获取对应平台的安装包：
 
 | 平台 | 文件 |
 | --- | --- |
@@ -95,7 +97,7 @@ cd src-tauri && cargo fmt --check && cargo clippy && cargo test
 
 ## 许可证
 
-[MIT](LICENSE) © Pure Compare contributors
+[MIT](LICENSE) © Comparator contributors
 
 ---
 
@@ -105,6 +107,6 @@ cd src-tauri && cargo fmt --check && cargo clippy && cargo test
 
 <br/>
 
-⭐ 如果 Pure Compare 对你有帮助，欢迎点个 Star —— 能帮到更多人发现它。
+⭐ 如果 Comparator 对你有帮助，欢迎点个 Star —— 能帮到更多人发现它。
 
 </div>

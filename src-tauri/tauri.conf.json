@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Pure Compare",
+  "productName": "Comparator",
   "version": "0.2.0",
-  "identifier": "com.purecompare.app",
+  "identifier": "com.comparator.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Pure Compare",
+        "title": "Comparator",
         "width": 1000,
         "height": 700,
         "minWidth": 720,

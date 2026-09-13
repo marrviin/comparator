@@ -26,3 +26,9 @@ src/assets/material-icon-theme/material-icons.json
 *.njsproj
 *.sln
 *.sw?
+
+# website screenshots are copied from docs/images at deploy time (local preview only)
+website/images/
+
+# Claude Code local config & skills
+.claude
