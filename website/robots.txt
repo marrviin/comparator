@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://marrviin.github.io/pure-compare/sitemap.xml
+Sitemap: https://marrviin.github.io/comparator/sitemap.xml

@@ -19,7 +19,8 @@ export interface HistoryEntry {
   ts: number;
 }
 
-const KEY = 'pure-compare:recent';
+const KEY = 'comparator:recent';
+const LEGACY_KEY = 'pure-compare:recent';
 const MAX = 12;
 
 /**
@@ -77,7 +78,12 @@ export function entryKey(e: HistoryEntry): string {
 /** Read the recent list; returns [] on missing or malformed storage. */
 export function loadHistory(): HistoryEntry[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    let raw = localStorage.getItem(KEY);
+    if (!raw) {
+      // Migrate data written under the pre-rename key ("pure-compare:recent").
+      raw = localStorage.getItem(LEGACY_KEY);
+      if (raw) localStorage.setItem(KEY, raw);
+    }
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];

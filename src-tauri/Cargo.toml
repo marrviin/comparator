@@ -1,5 +1,5 @@
 [package]
-name = "pure-compare"
+name = "comparator"
 version = "0.2.0"
 description = "A cross-platform file, folder and git diff comparison tool"
 authors = ["marrviin"]
@@ -12,7 +12,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This can be commented out or removed if you don't need to use the library from an external application.
-name = "pure_compare_lib"
+name = "comparator_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

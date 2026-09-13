@@ -12,7 +12,7 @@ import { GithubOutlined, MessageOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import icon from '../../assets/icon.png';
 
-const GITHUB_URL = 'https://github.com/marrviin/pure-compare';
+const GITHUB_URL = 'https://github.com/marrviin/comparator';
 const FEEDBACK_URL = `${GITHUB_URL}/issues/new`;
 
 export function AboutTab() {
@@ -32,11 +32,11 @@ export function AboutTab() {
       <div className="flex flex-col items-center gap-3 py-14">
         <img
           src={icon}
-          alt="Pure Compare"
+          alt="Comparator"
           className="w-20 h-20 rounded-xl object-contain select-none"
           draggable={false}
         />
-        <div className="text-lg font-semibold text-fg">Pure Compare</div>
+        <div className="text-lg font-semibold text-fg">Comparator</div>
         {version && <div className="text-xs text-muted">v{version}</div>}
         <Button
           icon={<MessageOutlined />}
@@ -55,7 +55,7 @@ export function AboutTab() {
           onClick={() => void openUrl(GITHUB_URL)}
         >
           <GithubOutlined />
-          <span>github.com/marrviin/pure-compare</span>
+          <span>github.com/marrviin/comparator</span>
         </button>
         <span className="text-[11px] text-muted select-none">
           © {new Date().getFullYear()} marrviin

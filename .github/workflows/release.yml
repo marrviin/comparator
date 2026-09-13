@@ -37,7 +37,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: 'Pure Compare ${{ github.ref_name }}'
+          name: 'Comparator ${{ github.ref_name }}'
           body: ${{ steps.changelog.outputs.changelog }}
           draft: true
           prerelease: false

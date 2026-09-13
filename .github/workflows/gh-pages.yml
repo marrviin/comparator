@@ -3,7 +3,7 @@ name: Deploy website to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['website/**', '.github/workflows/gh-pages.yml']
+    paths: ['website/**', 'docs/images/**', '.github/workflows/gh-pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,11 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
+      - name: Copy screenshots into website
+        run: |
+          mkdir -p website/images
+          cp docs/images/*.png website/images/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

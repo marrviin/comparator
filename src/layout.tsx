@@ -431,7 +431,7 @@ function RecentPanel({
                   if (key === 'settings') onOpenSettings('general');
                   if (key === 'ignore') onOpenSettings('ignore');
                   if (key === 'help')
-                    void openUrl('https://github.com/marrviin/pure-compare/issues/new');
+                    void openUrl('https://github.com/marrviin/comparator/issues/new');
                 },
               }}
             >
