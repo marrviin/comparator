@@ -61,6 +61,8 @@
       <div class="container">
         <div class="doc-grid">
           <nav class="doc-toc" aria-label="Releases">
+            <a href="#v0-4-0">v0.4.0</a>
+            <a href="#v0-3-0">v0.3.0</a>
             <a href="#v0-2-0">v0.2.0</a>
             <a href="#v0-1-0">v0.1.0</a>
           </nav>
@@ -73,10 +75,64 @@
             </div>
 
             <div class="doc-body">
+              <div class="release" id="v0-4-0">
+                <div class="release-head">
+                  <h2>v0.4.0</h2>
+                  <span class="release-tag">Latest</span>
+                  <span class="release-date">2026-09-14</span>
+                </div>
+                <h3>Breaking change</h3>
+                <ul>
+                  <li>
+                    The app is now called <strong>Manta Compare</strong> (previously Comparator). The
+                    bundle identifier changed to <code>com.mantacompare.app</code>, so existing
+                    installs are treated as a separate app and their data directories reset.
+                  </li>
+                </ul>
+                <h3>Changes</h3>
+                <ul>
+                  <li>Renamed the app across the UI, website, installer metadata, and package names</li>
+                  <li>
+                    Recent-comparison history migrates automatically from the previous
+                    (<code>comparator:recent</code>) and original (<code>pure-compare:recent</code>)
+                    storage keys
+                  </li>
+                  <li>Retook home screenshots and refreshed all website branding</li>
+                </ul>
+                <p class="rel-more">
+                  <a href="https://github.com/marrviin/manta-compare/compare/v0.3.0...v0.4.0"
+                    >Full changelog on GitHub →</a
+                  >
+                </p>
+              </div>
+
+              <div class="release" id="v0-3-0">
+                <div class="release-head">
+                  <h2>v0.3.0</h2>
+                  <span class="release-date">2026-09-13</span>
+                </div>
+                <h3>Features</h3>
+                <ul>
+                  <li>Launched a static intro website with SEO and GitHub Pages deployment</li>
+                </ul>
+                <h3>Changes</h3>
+                <ul>
+                  <li>Renamed the app from Pure Compare to Comparator (display name, identifiers, website)</li>
+                </ul>
+                <h3>Fixes</h3>
+                <ul>
+                  <li>Use Chinese screenshots for the zh homepage interface overview</li>
+                </ul>
+                <p class="rel-more">
+                  <a href="https://github.com/marrviin/manta-compare/compare/v0.2.0...v0.3.0"
+                    >Full changelog on GitHub →</a
+                  >
+                </p>
+              </div>
+
               <div class="release" id="v0-2-0">
                 <div class="release-head">
                   <h2>v0.2.0</h2>
-                  <span class="release-tag">Latest</span>
                   <span class="release-date">2026-09-12</span>
                 </div>
                 <h3>Features</h3>
