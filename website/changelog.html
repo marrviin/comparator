@@ -3,29 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Changelog — Comparator</title>
-    <meta name="description" content="Comparator release notes and version history." />
-    <link rel="canonical" href="https://marrviin.github.io/comparator/changelog.html" />
+    <title>Changelog — Manta Compare</title>
+    <meta name="description" content="Manta Compare release notes and version history." />
+    <link rel="canonical" href="https://marrviin.github.io/manta-compare/changelog.html" />
     <link
       rel="alternate"
       hreflang="en"
-      href="https://marrviin.github.io/comparator/changelog.html"
+      href="https://marrviin.github.io/manta-compare/changelog.html"
     />
     <link
       rel="alternate"
       hreflang="zh-CN"
-      href="https://marrviin.github.io/comparator/changelog.zh.html"
+      href="https://marrviin.github.io/manta-compare/changelog.zh.html"
     />
     <link
       rel="alternate"
       hreflang="x-default"
-      href="https://marrviin.github.io/comparator/changelog.html"
+      href="https://marrviin.github.io/manta-compare/changelog.html"
     />
     <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="Comparator" />
-    <meta property="og:title" content="Comparator Changelog" />
-    <meta property="og:description" content="Comparator release notes and version history." />
-    <meta property="og:url" content="https://marrviin.github.io/comparator/changelog.html" />
+    <meta property="og:site_name" content="Manta Compare" />
+    <meta property="og:title" content="Manta Compare Changelog" />
+    <meta property="og:description" content="Manta Compare release notes and version history." />
+    <meta property="og:url" content="https://marrviin.github.io/manta-compare/changelog.html" />
     <link rel="icon" type="image/png" href="./images/app-icon.png" />
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -33,7 +33,7 @@
     <nav>
       <div class="container nav-inner">
         <a class="brand" href="./index.html"
-          ><img class="brand-mark" src="./images/app-icon.png" alt="" />Comparator</a
+          ><img class="brand-mark" src="./images/app-icon.png" alt="" />Manta Compare</a
         >
         <div class="nav-right">
           <div class="nav-links">
@@ -46,7 +46,7 @@
               <a href="./changelog.zh.html">中文</a>
             </span>
           </div>
-          <a class="nav-gh" href="https://github.com/marrviin/comparator" aria-label="GitHub">
+          <a class="nav-gh" href="https://github.com/marrviin/manta-compare" aria-label="GitHub">
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
               <path
                 d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
@@ -61,6 +61,8 @@
       <div class="container">
         <div class="doc-grid">
           <nav class="doc-toc" aria-label="Releases">
+            <a href="#v0-4-0">v0.4.0</a>
+            <a href="#v0-3-0">v0.3.0</a>
             <a href="#v0-2-0">v0.2.0</a>
             <a href="#v0-1-0">v0.1.0</a>
           </nav>
@@ -73,10 +75,64 @@
             </div>
 
             <div class="doc-body">
+              <div class="release" id="v0-4-0">
+                <div class="release-head">
+                  <h2>v0.4.0</h2>
+                  <span class="release-tag">Latest</span>
+                  <span class="release-date">2026-09-14</span>
+                </div>
+                <h3>Breaking change</h3>
+                <ul>
+                  <li>
+                    The app is now called <strong>Manta Compare</strong> (previously Comparator). The
+                    bundle identifier changed to <code>com.mantacompare.app</code>, so existing
+                    installs are treated as a separate app and their data directories reset.
+                  </li>
+                </ul>
+                <h3>Changes</h3>
+                <ul>
+                  <li>Renamed the app across the UI, website, installer metadata, and package names</li>
+                  <li>
+                    Recent-comparison history migrates automatically from the previous
+                    (<code>comparator:recent</code>) and original (<code>pure-compare:recent</code>)
+                    storage keys
+                  </li>
+                  <li>Retook home screenshots and refreshed all website branding</li>
+                </ul>
+                <p class="rel-more">
+                  <a href="https://github.com/marrviin/manta-compare/compare/v0.3.0...v0.4.0"
+                    >Full changelog on GitHub →</a
+                  >
+                </p>
+              </div>
+
+              <div class="release" id="v0-3-0">
+                <div class="release-head">
+                  <h2>v0.3.0</h2>
+                  <span class="release-date">2026-09-13</span>
+                </div>
+                <h3>Features</h3>
+                <ul>
+                  <li>Launched a static intro website with SEO and GitHub Pages deployment</li>
+                </ul>
+                <h3>Changes</h3>
+                <ul>
+                  <li>Renamed the app from Pure Compare to Comparator (display name, identifiers, website)</li>
+                </ul>
+                <h3>Fixes</h3>
+                <ul>
+                  <li>Use Chinese screenshots for the zh homepage interface overview</li>
+                </ul>
+                <p class="rel-more">
+                  <a href="https://github.com/marrviin/manta-compare/compare/v0.2.0...v0.3.0"
+                    >Full changelog on GitHub →</a
+                  >
+                </p>
+              </div>
+
               <div class="release" id="v0-2-0">
                 <div class="release-head">
                   <h2>v0.2.0</h2>
-                  <span class="release-tag">Latest</span>
                   <span class="release-date">2026-09-12</span>
                 </div>
                 <h3>Features</h3>
@@ -99,7 +155,7 @@
                   <li>Replaced @ant-design/x with a shared menu skin and message toasts</li>
                 </ul>
                 <p class="rel-more">
-                  <a href="https://github.com/marrviin/comparator/compare/v0.1.0...v0.2.0"
+                  <a href="https://github.com/marrviin/manta-compare/compare/v0.1.0...v0.2.0"
                     >Full changelog on GitHub →</a
                   >
                 </p>
@@ -134,12 +190,12 @@
     <footer>
       <div class="container">
         <div class="foot-links">
-          <a href="https://github.com/marrviin/comparator">GitHub</a>
-          <a href="https://github.com/marrviin/comparator/releases">Releases</a>
-          <a href="https://github.com/marrviin/comparator/blob/main/LICENSE">MIT License</a>
+          <a href="https://github.com/marrviin/manta-compare">GitHub</a>
+          <a href="https://github.com/marrviin/manta-compare/releases">Releases</a>
+          <a href="https://github.com/marrviin/manta-compare/blob/main/LICENSE">MIT License</a>
           <a href="./changelog.zh.html">简体中文</a>
         </div>
-        <p>© Comparator contributors</p>
+        <p>© Manta Compare contributors</p>
       </div>
     </footer>
   </body>

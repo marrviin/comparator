@@ -4,129 +4,129 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
 >
   <url>
-    <loc>https://marrviin.github.io/comparator/</loc>
+    <loc>https://marrviin.github.io/manta-compare/</loc>
     <lastmod>2026-09-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link
       rel="alternate"
       hreflang="en"
-      href="https://marrviin.github.io/comparator/"
+      href="https://marrviin.github.io/manta-compare/"
     />
     <xhtml:link
       rel="alternate"
       hreflang="zh-CN"
-      href="https://marrviin.github.io/comparator/zh.html"
+      href="https://marrviin.github.io/manta-compare/zh.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="x-default"
-      href="https://marrviin.github.io/comparator/"
+      href="https://marrviin.github.io/manta-compare/"
     />
   </url>
   <url>
-    <loc>https://marrviin.github.io/comparator/zh.html</loc>
+    <loc>https://marrviin.github.io/manta-compare/zh.html</loc>
     <lastmod>2026-09-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <xhtml:link
       rel="alternate"
       hreflang="en"
-      href="https://marrviin.github.io/comparator/"
+      href="https://marrviin.github.io/manta-compare/"
     />
     <xhtml:link
       rel="alternate"
       hreflang="zh-CN"
-      href="https://marrviin.github.io/comparator/zh.html"
+      href="https://marrviin.github.io/manta-compare/zh.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="x-default"
-      href="https://marrviin.github.io/comparator/"
+      href="https://marrviin.github.io/manta-compare/"
     />
   </url>
   <url>
-    <loc>https://marrviin.github.io/comparator/docs.html</loc>
+    <loc>https://marrviin.github.io/manta-compare/docs.html</loc>
     <lastmod>2026-09-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link
       rel="alternate"
       hreflang="en"
-      href="https://marrviin.github.io/comparator/docs.html"
+      href="https://marrviin.github.io/manta-compare/docs.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="zh-CN"
-      href="https://marrviin.github.io/comparator/docs.zh.html"
+      href="https://marrviin.github.io/manta-compare/docs.zh.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="x-default"
-      href="https://marrviin.github.io/comparator/docs.html"
+      href="https://marrviin.github.io/manta-compare/docs.html"
     />
   </url>
   <url>
-    <loc>https://marrviin.github.io/comparator/docs.zh.html</loc>
+    <loc>https://marrviin.github.io/manta-compare/docs.zh.html</loc>
     <lastmod>2026-09-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <xhtml:link
       rel="alternate"
       hreflang="en"
-      href="https://marrviin.github.io/comparator/docs.html"
+      href="https://marrviin.github.io/manta-compare/docs.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="zh-CN"
-      href="https://marrviin.github.io/comparator/docs.zh.html"
+      href="https://marrviin.github.io/manta-compare/docs.zh.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="x-default"
-      href="https://marrviin.github.io/comparator/docs.html"
+      href="https://marrviin.github.io/manta-compare/docs.html"
     />
   </url>
   <url>
-    <loc>https://marrviin.github.io/comparator/changelog.html</loc>
+    <loc>https://marrviin.github.io/manta-compare/changelog.html</loc>
     <lastmod>2026-09-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <xhtml:link
       rel="alternate"
       hreflang="en"
-      href="https://marrviin.github.io/comparator/changelog.html"
+      href="https://marrviin.github.io/manta-compare/changelog.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="zh-CN"
-      href="https://marrviin.github.io/comparator/changelog.zh.html"
+      href="https://marrviin.github.io/manta-compare/changelog.zh.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="x-default"
-      href="https://marrviin.github.io/comparator/changelog.html"
+      href="https://marrviin.github.io/manta-compare/changelog.html"
     />
   </url>
   <url>
-    <loc>https://marrviin.github.io/comparator/changelog.zh.html</loc>
+    <loc>https://marrviin.github.io/manta-compare/changelog.zh.html</loc>
     <lastmod>2026-09-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
     <xhtml:link
       rel="alternate"
       hreflang="en"
-      href="https://marrviin.github.io/comparator/changelog.html"
+      href="https://marrviin.github.io/manta-compare/changelog.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="zh-CN"
-      href="https://marrviin.github.io/comparator/changelog.zh.html"
+      href="https://marrviin.github.io/manta-compare/changelog.zh.html"
     />
     <xhtml:link
       rel="alternate"
       hreflang="x-default"
-      href="https://marrviin.github.io/comparator/changelog.html"
+      href="https://marrviin.github.io/manta-compare/changelog.html"
     />
   </url>
 </urlset>
