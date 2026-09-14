@@ -248,7 +248,7 @@ export function HomePage() {
       <AppHeader siderCollapsed={siderCollapsed} onExpandSider={onExpandSider} bordered={false} />
       <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-7 p-4 sm:p-8">
         <div className="mb-4">
-          <WelcomeHero icon={icon} title="Comparator" description={t('description')} />
+          <WelcomeHero icon={icon} title="Manta Compare" description={t('description')} />
         </div>
 
         <div className="w-full max-w-[760px] grid gap-4 justify-center grid-cols-[repeat(auto-fit,minmax(140px,1fr))]">

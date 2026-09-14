@@ -1,5 +1,5 @@
 {
-  "name": "comparator",
+  "name": "manta-compare",
   "private": true,
   "version": "0.3.0",
   "type": "module",

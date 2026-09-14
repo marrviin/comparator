@@ -19,8 +19,9 @@ export interface HistoryEntry {
   ts: number;
 }
 
-const KEY = 'comparator:recent';
-const LEGACY_KEY = 'pure-compare:recent';
+const KEY = 'manta-compare:recent';
+/** Keys written before the renames ("pure-compare" -> "comparator" -> "manta-compare"). */
+const LEGACY_KEYS = ['comparator:recent', 'pure-compare:recent'];
 const MAX = 12;
 
 /**
@@ -80,8 +81,11 @@ export function loadHistory(): HistoryEntry[] {
   try {
     let raw = localStorage.getItem(KEY);
     if (!raw) {
-      // Migrate data written under the pre-rename key ("pure-compare:recent").
-      raw = localStorage.getItem(LEGACY_KEY);
+      // Migrate data written under pre-rename keys (oldest first).
+      for (const legacyKey of LEGACY_KEYS) {
+        raw = localStorage.getItem(legacyKey);
+        if (raw) break;
+      }
       if (raw) localStorage.setItem(KEY, raw);
     }
     if (!raw) return [];

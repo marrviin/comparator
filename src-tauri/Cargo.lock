@@ -493,25 +493,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "comparator"
-version = "0.3.0"
-dependencies = [
- "chardetng",
- "content_inspector",
- "encoding_rs",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-store",
- "trash",
-]
-
-[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2071,6 +2052,25 @@ name = "log"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
+
+[[package]]
+name = "manta-compare"
+version = "0.3.0"
+dependencies = [
+ "chardetng",
+ "content_inspector",
+ "encoding_rs",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-store",
+ "trash",
+]
 
 [[package]]
 name = "markup5ever"

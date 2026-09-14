@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Comparator",
+  "productName": "Manta Compare",
   "version": "0.3.0",
-  "identifier": "com.comparator.app",
+  "identifier": "com.mantacompare.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Comparator",
+        "title": "Manta Compare",
         "width": 1000,
         "height": 700,
         "minWidth": 720,

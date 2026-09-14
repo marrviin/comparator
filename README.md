@@ -1,6 +1,6 @@
 <div align="center">
 
-# Comparator
+# Manta Compare
 
 **A fast, cross-platform diff tool for text, folders, and Git — powered by Tauri & Monaco.**
 
@@ -9,24 +9,24 @@ A lightweight, native desktop alternative to Beyond Compare and Meld — free an
 
 **English** · [简体中文](./README.zh-CN.md)
 
-🌐 **Website**: [https://marrviin.github.io/comparator/](https://marrviin.github.io/comparator/)
+🌐 **Website**: [https://marrviin.github.io/manta-compare/](https://marrviin.github.io/manta-compare/)
 
-[![CI](https://github.com/marrviin/comparator/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/comparator/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/marrviin/comparator?include_prereleases&sort=semver)](https://github.com/marrviin/comparator/releases)
-[![Downloads](https://img.shields.io/github/downloads/marrviin/comparator/total)](https://github.com/marrviin/comparator/releases)
+[![CI](https://github.com/marrviin/manta-compare/actions/workflows/ci.yml/badge.svg)](https://github.com/marrviin/manta-compare/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/marrviin/manta-compare?include_prereleases&sort=semver)](https://github.com/marrviin/manta-compare/releases)
+[![Downloads](https://img.shields.io/github/downloads/marrviin/manta-compare/total)](https://github.com/marrviin/manta-compare/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 
-[**⬇️ Download**](https://github.com/marrviin/comparator/releases/latest) ·
+[**⬇️ Download**](https://github.com/marrviin/manta-compare/releases/latest) ·
 [Features](#features) ·
 [Screenshots](#screenshots) ·
 [Build from source](#build-from-source)
 
-![Comparator screenshot](./docs/images/home-en.png)
+![Manta Compare screenshot](./docs/images/home-en.png)
 
 </div>
 
-## Why Comparator?
+## Why Manta Compare?
 
 - ⚡ **Native & lightweight** — built on Tauri (Rust), not Electron. Small binary, low memory, instant startup.
 - 🎨 **IDE-grade diff** — the Monaco editor (the engine behind VS Code) drives syntax highlighting and large-file handling.
@@ -52,7 +52,7 @@ A lightweight, native desktop alternative to Beyond Compare and Meld — free an
 
 ## Download
 
-Grab the installer for your platform from the [**latest release**](https://github.com/marrviin/comparator/releases/latest):
+Grab the installer for your platform from the [**latest release**](https://github.com/marrviin/manta-compare/releases/latest):
 
 | Platform | File |
 | --- | --- |
@@ -97,7 +97,7 @@ Assets are generated from the npm package by `scripts/sync-material-icons.mjs` d
 
 ## License
 
-[MIT](LICENSE) © Comparator contributors
+[MIT](LICENSE) © Manta Compare contributors
 
 ---
 
@@ -107,6 +107,6 @@ Assets are generated from the npm package by `scripts/sync-material-icons.mjs` d
 
 <br/>
 
-⭐ If Comparator is useful to you, consider starring the repo — it helps others find it.
+⭐ If Manta Compare is useful to you, consider starring the repo — it helps others find it.
 
 </div>
